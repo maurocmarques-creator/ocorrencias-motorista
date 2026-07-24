@@ -325,7 +325,7 @@
 </div>
 
 <footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;">
-  Última atualização: 24/07/2026 17:27
+  Última atualização: 24/07/2026 16:42
 </footer>
 
 <script>
@@ -339,6 +339,9 @@
     document.querySelectorAll('.radio-option').forEach(r => r.classList.remove('selected'));
     el.classList.add('selected');
     baseSel = base;
+    // Limpa erro e resultado anterior ao trocar de empresa
+    const err = document.getElementById('err1');
+    if (err) { err.textContent = ''; err.style.display = 'none'; }
   }
 
   // ── Buscar minuta ────────────────────────────────────
@@ -358,9 +361,9 @@
       const r = await fetch(`/api/minuta?base=${baseSel}&codigo=${mn}`);
       const j = await r.json();
 
-      // Valida se a minuta realmente pertence a esta base
-      if (!r.ok || !j.data || !j.data[0] || !j.data[0].minuta) {
-        throw new Error('Minuta não pertence a esta base.');
+      // Falha só se HTTP error ou sem dados de resposta
+      if (!r.ok || !j.data || !j.data[0]) {
+        throw new Error(j.message || 'Minuta não encontrada.');
       }
 
       const doc  = j.data[0];
