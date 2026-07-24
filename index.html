@@ -3,251 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Registro de Ocorrências</title>
+  <title>Registro de Ocorrencias</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; background: #f0f2f5; min-height: 100vh; }
-
-    header {
-      background: #1F3864;
-      color: white;
-      padding: 18px 16px;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
+    header { background: #1F3864; color: white; padding: 18px 16px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     header h1 { font-size: 17px; letter-spacing: 0.5px; }
     header p  { font-size: 11px; opacity: 0.75; margin-top: 3px; }
-
     .container { padding: 16px; max-width: 480px; margin: 0 auto; }
-
-    .card {
-      background: white;
-      border-radius: 10px;
-      padding: 18px;
-      margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    }
-    .card h2 {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #1F3864;
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #e8eef8;
-    }
-
+    .card { background: white; border-radius: 10px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #1F3864; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e8eef8; }
     .radio-group { display: flex; flex-direction: column; gap: 8px; }
-    .radio-option {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 13px 14px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-      user-select: none;
-    }
+    .radio-option { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.15s; user-select: none; }
     .radio-option.selected { border-color: #1F3864; background: #eef2fa; }
     .radio-option input[type=radio] { display: none; }
-    .radio-dot {
-      width: 20px; height: 20px;
-      border: 2px solid #bbb;
-      border-radius: 50%;
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
-    }
-    .radio-option.selected .radio-dot {
-      border-color: #1F3864;
-      background: #1F3864;
-    }
-    .radio-option.selected .radio-dot::after {
-      content: '';
-      width: 8px; height: 8px;
-      background: white;
-      border-radius: 50%;
-    }
+    .radio-dot { width: 20px; height: 20px; border: 2px solid #bbb; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .radio-option.selected .radio-dot { border-color: #1F3864; background: #1F3864; }
+    .radio-option.selected .radio-dot::after { content: ''; width: 8px; height: 8px; background: white; border-radius: 50%; }
     .radio-label { font-size: 15px; font-weight: bold; color: #333; }
-
     label.field-label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
-
-    input[type=text], input[type=number], select, textarea {
-      width: 100%;
-      padding: 13px 12px;
-      border: 1.5px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
-      color: #333;
-      background: #fafafa;
-      transition: border-color 0.15s;
-      -webkit-appearance: none;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #1F3864;
-      background: #fff;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 15px;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      transition: opacity 0.15s, transform 0.1s;
-      margin-top: 10px;
-    }
+    input[type=text], input[type=number], select, textarea { width: 100%; padding: 13px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 16px; color: #333; background: #fafafa; transition: border-color 0.15s; -webkit-appearance: none; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #1F3864; background: #fff; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.15s, transform 0.1s; margin-top: 10px; }
     .btn:active { opacity: 0.85; transform: scale(0.99); }
     .btn-primary  { background: #1F3864; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
     .btn-success  { background: #198754; color: white; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .info-box {
-      background: #f0f4ff;
-      border-left: 4px solid #1F3864;
-      border-radius: 4px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-    }
+    .info-box { background: #f0f4ff; border-left: 4px solid #1F3864; border-radius: 4px; padding: 12px 14px; margin-bottom: 14px; }
     .info-row { display: flex; gap: 6px; margin-bottom: 5px; font-size: 13px; }
     .info-row:last-child { margin-bottom: 0; }
     .info-key { color: #888; min-width: 100px; flex-shrink: 0; }
     .info-val { color: #1F3864; font-weight: bold; word-break: break-word; }
-
-    .foto-area {
-      border: 2px dashed #1F3864;
-      border-radius: 8px;
-      padding: 22px 16px;
-      text-align: center;
-      cursor: pointer;
-      background: #f8faff;
-      transition: background 0.15s;
-    }
+    .foto-area { border: 2px dashed #1F3864; border-radius: 8px; padding: 22px 16px; text-align: center; cursor: pointer; background: #f8faff; transition: background 0.15s; }
     .foto-area:active { background: #eef2fa; }
     .foto-area input { display: none; }
     .foto-area .foto-icon { font-size: 38px; margin-bottom: 6px; }
     .foto-area .foto-txt { font-size: 13px; color: #666; }
     .foto-area img { max-width: 100%; border-radius: 8px; margin-top: 10px; display: none; }
-    .foto-badge {
-      display: inline-block;
-      background: #198754;
-      color: white;
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      margin-top: 6px;
-    }
-
-    .error-box {
-      background: #fff0f0;
-      border: 1px solid #f5c6cb;
-      color: #842029;
-      padding: 11px 13px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-top: 10px;
-      display: none;
-    }
-
+    .foto-badge { display: inline-block; background: #198754; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-top: 6px; }
+    .error-box { background: #fff0f0; border: 1px solid #f5c6cb; color: #842029; padding: 11px 13px; border-radius: 8px; font-size: 13px; margin-top: 10px; display: none; }
     .step { display: none; }
     .step.active { display: block; }
-
-    .success-card {
-      text-align: center;
-      padding: 32px 20px;
-    }
+    .success-card { text-align: center; padding: 32px 20px; }
     .success-icon { font-size: 64px; margin-bottom: 14px; }
     .success-title { font-size: 22px; font-weight: bold; color: #198754; margin-bottom: 8px; }
     .success-sub { font-size: 14px; color: #555; line-height: 1.5; }
-    .success-detail {
-      background: #f0faf5;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin: 16px 0;
-      text-align: left;
-    }
+    .success-detail { background: #f0faf5; border-radius: 8px; padding: 12px 16px; margin: 16px 0; text-align: left; }
     .success-detail p { font-size: 13px; color: #333; margin-bottom: 4px; }
     .success-detail p:last-child { margin-bottom: 0; }
-
-    .spinner {
-      display: inline-block;
-      width: 18px; height: 18px;
-      border: 3px solid rgba(255,255,255,0.4);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .field-group { margin-bottom: 14px; }
     .field-group:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
-
 <header>
   <h1>Registro de Ocorrencias</h1>
   <p>Porto Express - PTX Transporte - Pex Logistica</p>
 </header>
-
 <div class="container">
-
-  <!-- STEP 1: Empresa + Minuta -->
   <div id="step1" class="step active">
     <div class="card">
       <h2>1. Selecione a Empresa</h2>
       <div class="radio-group">
-        <div class="radio-option" onclick="selectBase(this,'porto')">
-          <input type="radio" name="base" value="porto">
-          <div class="radio-dot"></div>
-          <span class="radio-label">Porto Express</span>
-        </div>
-        <div class="radio-option" onclick="selectBase(this,'ptx')">
-          <input type="radio" name="base" value="ptx">
-          <div class="radio-dot"></div>
-          <span class="radio-label">PTX Transporte</span>
-        </div>
-        <div class="radio-option" onclick="selectBase(this,'pex')">
-          <input type="radio" name="base" value="pex">
-          <div class="radio-dot"></div>
-          <span class="radio-label">Pex Logistica</span>
-        </div>
+        <div class="radio-option" onclick="selectBase(this,'porto')"><input type="radio" name="base" value="porto"><div class="radio-dot"></div><span class="radio-label">Porto Express</span></div>
+        <div class="radio-option" onclick="selectBase(this,'ptx')"><input type="radio" name="base" value="ptx"><div class="radio-dot"></div><span class="radio-label">PTX Transporte</span></div>
+        <div class="radio-option" onclick="selectBase(this,'pex')"><input type="radio" name="base" value="pex"><div class="radio-dot"></div><span class="radio-label">Pex Logistica</span></div>
       </div>
     </div>
-
     <div class="card">
       <h2>2. Numero da Minuta</h2>
       <div class="field-group">
         <label class="field-label">Minuta</label>
-        <input type="number" id="minuta" placeholder="Ex: 291065" inputmode="numeric" pattern="[0-9]*">
+        <input type="number" id="minuta" placeholder="Ex: 1132" inputmode="numeric" pattern="[0-9]*">
       </div>
       <div id="err1" class="error-box"></div>
       <button class="btn btn-primary" id="btn-buscar" onclick="buscarMinuta()">BUSCAR MINUTA</button>
     </div>
   </div>
-
-  <!-- STEP 2: Ocorrencia -->
   <div id="step2" class="step">
     <div class="card">
       <h2>Dados da Minuta</h2>
       <div class="info-box" id="minuta-info"></div>
       <button class="btn btn-secondary" onclick="voltar()">Voltar</button>
     </div>
-
     <div class="card">
       <h2>3. Selecione a Ocorrencia</h2>
-
       <div class="field-group">
         <label class="field-label">Ocorrencia</label>
         <select id="ocorrencia" onchange="onOcorrenciaChange()">
@@ -268,30 +111,24 @@
           <option value="512">512 - RECUSADA POR FALTA DE AGENDAMENTO</option>
         </select>
       </div>
-
       <div class="field-group">
         <label class="field-label">Observacao (opcional)</label>
         <input type="text" id="obs" placeholder="Digite uma observacao...">
       </div>
-
-      <!-- Foto - aparece so quando ocorrencia = 1 -->
       <div id="foto-section" class="field-group" style="display:none;">
         <label class="field-label">Foto do Comprovante *</label>
         <div class="foto-area" onclick="document.getElementById('foto-input').click()">
           <input type="file" id="foto-input" accept="image/*" capture="camera" onchange="onFotoChange()">
           <div class="foto-icon" id="foto-icon">&#128247;</div>
           <div class="foto-txt" id="foto-txt">Toque para tirar foto ou selecionar</div>
-          <img id="foto-preview" alt="Previa da foto">
+          <img id="foto-preview" alt="Previa">
           <div id="foto-badge" class="foto-badge" style="display:none;">Foto selecionada</div>
         </div>
       </div>
-
       <div id="err2" class="error-box"></div>
       <button class="btn btn-primary" id="btn-registrar" onclick="registrar()">REGISTRAR OCORRENCIA</button>
     </div>
   </div>
-
-  <!-- STEP 3: Sucesso -->
   <div id="step3" class="step">
     <div class="card">
       <div class="success-card">
@@ -303,58 +140,50 @@
       </div>
     </div>
   </div>
-
 </div>
-
 <script>
-  let baseSel   = null;
-  let cnpjDest  = null;
-  let fotoB64   = null;
-  let fotoNome  = null;
+  var baseSel = null, cnpjDest = null, fotoB64 = null, fotoNome = null;
 
   function selectBase(el, base) {
-    document.querySelectorAll('.radio-option').forEach(r => r.classList.remove('selected'));
+    document.querySelectorAll('.radio-option').forEach(function(r){ r.classList.remove('selected'); });
     el.classList.add('selected');
     baseSel = base;
   }
 
   async function buscarMinuta() {
-    const err = document.getElementById('err1');
+    var err = document.getElementById('err1');
     err.style.display = 'none';
-
     if (!baseSel) return showErr(err, 'Selecione a empresa.');
-    const mn = document.getElementById('minuta').value.trim();
+    var mn = document.getElementById('minuta').value.trim();
     if (!mn) return showErr(err, 'Informe o numero da minuta.');
-
-    const btn = document.getElementById('btn-buscar');
+    var btn = document.getElementById('btn-buscar');
     btn.innerHTML = '<span class="spinner"></span>Buscando...';
     btn.disabled = true;
-
     try {
-      const r = await fetch('/api/minuta?base=' + baseSel + '&codigo=' + mn);
-      const j = await r.json();
+      var r = await fetch('/api/minuta?base=' + baseSel + '&codigo=' + mn);
+      var j = await r.json();
 
-      if (!r.ok || !j.data || !j.data[0] || j.data[0].status === 0) {
-        const errMsg = (j.data && j.data[0] && j.data[0].message) || j.message || '';
-        throw new Error(errMsg === 'OK' || !errMsg ? 'Minuta nao encontrada ou inexistente nesta base.' : errMsg);
+      // Falha somente se HTTP error ou sem dados
+      if (!r.ok || !j.data || !j.data[0]) {
+        throw new Error(j.message || 'Minuta nao encontrada.');
       }
 
-      const doc  = j.data[0];
-      const dadosArr = doc.dados || [];
-      const ev = dadosArr.find(function(d){ return d.razao_destinatario; }) || dadosArr[0] || {};
-
+      var doc = j.data[0];
+      var semRastreio = (doc.status === 0);
+      var dadosArr = doc.dados || [];
+      var ev = dadosArr.find(function(d){ return d.razao_destinatario; }) || dadosArr[0] || {};
       cnpjDest = ev.cnpj_destinatario || '';
 
-      const nomeBase = { porto: 'Porto Express', ptx: 'PTX Transporte', pex: 'Pex Logistica' }[baseSel];
+      var nomeBase = { porto: 'Porto Express', ptx: 'PTX Transporte', pex: 'Pex Logistica' }[baseSel];
+      var html = '<div class="info-row"><span class="info-key">Empresa</span><span class="info-val">' + nomeBase + '</span></div>'
+               + '<div class="info-row"><span class="info-key">Minuta</span><span class="info-val">' + doc.documento + '</span></div>';
+      if (ev.razao_remetente)    html += '<div class="info-row"><span class="info-key">Remetente</span><span class="info-val">' + ev.razao_remetente + '</span></div>';
+      if (ev.razao_destinatario) html += '<div class="info-row"><span class="info-key">Destinatario</span><span class="info-val">' + ev.razao_destinatario + '</span></div>';
+      if (ev.previsao_entrega)   html += '<div class="info-row"><span class="info-key">Prev. Entrega</span><span class="info-val">' + ev.previsao_entrega + '</span></div>';
+      if (semRastreio) html += '<div style="font-size:12px;color:#856404;background:#fff3cd;border-radius:4px;padding:6px 8px;margin-top:8px;">Minuta sem historico de rastreio. Pode registrar normalmente.</div>';
 
-      document.getElementById('minuta-info').innerHTML =
-        '<div class="info-row"><span class="info-key">Empresa</span><span class="info-val">' + nomeBase + '</span></div>' +
-        '<div class="info-row"><span class="info-key">Minuta</span><span class="info-val">' + doc.documento + '</span></div>' +
-        '<div class="info-row"><span class="info-key">Remetente</span><span class="info-val">' + (ev.razao_remetente || '-') + '</span></div>' +
-        '<div class="info-row"><span class="info-key">Destinatario</span><span class="info-val">' + (ev.razao_destinatario || '-') + '</span></div>' +
-        '<div class="info-row"><span class="info-key">Prev. Entrega</span><span class="info-val">' + (ev.previsao_entrega || '-') + '</span></div>';
-
-      go('step1','step2');
+      document.getElementById('minuta-info').innerHTML = html;
+      go('step1', 'step2');
     } catch(e) {
       showErr(err, e.message);
     } finally {
@@ -364,22 +193,20 @@
   }
 
   function onOcorrenciaChange() {
-    const cod = document.getElementById('ocorrencia').value;
-    const fs  = document.getElementById('foto-section');
-    fs.style.display = cod === '1' ? 'block' : 'none';
+    var cod = document.getElementById('ocorrencia').value;
+    document.getElementById('foto-section').style.display = cod === '1' ? 'block' : 'none';
     if (cod !== '1') { fotoB64 = null; fotoNome = null; resetFoto(); }
   }
 
   function onFotoChange() {
-    const file = document.getElementById('foto-input').files[0];
+    var file = document.getElementById('foto-input').files[0];
     if (!file) return;
     fotoNome = file.name;
-    const reader = new FileReader();
+    var reader = new FileReader();
     reader.onload = function(e) {
       fotoB64 = e.target.result.split(',')[1];
-      const prev = document.getElementById('foto-preview');
-      prev.src = e.target.result;
-      prev.style.display = 'block';
+      var prev = document.getElementById('foto-preview');
+      prev.src = e.target.result; prev.style.display = 'block';
       document.getElementById('foto-icon').style.display = 'none';
       document.getElementById('foto-txt').style.display = 'none';
       document.getElementById('foto-badge').style.display = 'inline-block';
@@ -397,71 +224,54 @@
   }
 
   async function registrar() {
-    const err = document.getElementById('err2');
+    var err = document.getElementById('err2');
     err.style.display = 'none';
-
-    const cod = document.getElementById('ocorrencia').value;
+    var cod = document.getElementById('ocorrencia').value;
     if (!cod) return showErr(err, 'Selecione uma ocorrencia.');
     if (cod === '1' && !fotoB64) return showErr(err, 'A foto do comprovante e obrigatoria para Entrega Realizada.');
-
-    const obs    = document.getElementById('obs').value.trim();
-    const minuta = document.getElementById('minuta').value.trim();
-    const btn    = document.getElementById('btn-registrar');
-
+    var obs = document.getElementById('obs').value.trim();
+    var minuta = document.getElementById('minuta').value.trim();
+    var btn = document.getElementById('btn-registrar');
     btn.innerHTML = '<span class="spinner"></span>Registrando...';
-    btn.disabled  = true;
-
+    btn.disabled = true;
     try {
-      const r = await fetch('/api/ocorrencia', {
+      var r = await fetch('/api/ocorrencia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          base:        baseSel,
-          minuta:      parseInt(minuta),
-          cnpj:        cnpjDest,
-          codigo:      parseInt(cod),
-          obs:         obs || null,
-          foto_base64: fotoB64  || null,
-          foto_nome:   fotoNome || null
-        })
+        body: JSON.stringify({ base: baseSel, minuta: parseInt(minuta), cnpj: cnpjDest, codigo: parseInt(cod), obs: obs || null, foto_base64: fotoB64 || null, foto_nome: fotoNome || null })
       });
-
-      const j = await r.json();
+      var j = await r.json();
       if (!r.ok) throw new Error(j.error || j.message || 'Erro ao registrar.');
-
-      const ocNome = document.getElementById('ocorrencia').selectedOptions[0].text;
-      const nomeBase = { porto: 'Porto Express', ptx: 'PTX Transporte', pex: 'Pex Logistica' }[baseSel];
-
+      var ocNome = document.getElementById('ocorrencia').selectedOptions[0].text;
+      var nomeBase = { porto: 'Porto Express', ptx: 'PTX Transporte', pex: 'Pex Logistica' }[baseSel];
       document.getElementById('success-detail').innerHTML =
         '<p><strong>Empresa:</strong> ' + nomeBase + '</p>' +
         '<p><strong>Minuta:</strong> ' + minuta + '</p>' +
         '<p><strong>Ocorrencia:</strong> ' + ocNome + '</p>' +
         (obs ? '<p><strong>Obs:</strong> ' + obs + '</p>' : '');
-
-      go('step2','step3');
+      go('step2', 'step3');
     } catch(e) {
       showErr(err, e.message);
     } finally {
       btn.innerHTML = 'REGISTRAR OCORRENCIA';
-      btn.disabled  = false;
+      btn.disabled = false;
     }
   }
 
   function reiniciar() {
     baseSel = null; cnpjDest = null; fotoB64 = null; fotoNome = null;
-    document.getElementById('minuta').value     = '';
+    document.getElementById('minuta').value = '';
     document.getElementById('ocorrencia').value = '';
-    document.getElementById('obs').value        = '';
+    document.getElementById('obs').value = '';
     document.getElementById('foto-section').style.display = 'none';
     document.getElementById('err1').style.display = 'none';
     document.getElementById('err2').style.display = 'none';
     resetFoto();
     document.querySelectorAll('.radio-option').forEach(function(r){ r.classList.remove('selected'); });
-    go('step3','step1');
+    go('step3', 'step1');
   }
 
-  function voltar() { go('step2','step1'); }
-
+  function voltar() { go('step2', 'step1'); }
   function go(from, to) {
     document.getElementById(from).classList.remove('active');
     document.getElementById(to).classList.add('active');
@@ -469,6 +279,5 @@
   }
   function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
 </script>
-
 </body>
 </html>
