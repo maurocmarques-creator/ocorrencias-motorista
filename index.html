@@ -315,7 +315,7 @@
       <div class="success-card">
         <div class="success-icon">✅</div>
         <div class="success-title">Registrado!</div>
-        <p class="success-sub">Ocorrência registrada com sucesso no Brudam.</p>
+        <p class="succest-sub">Ocorrência registrada com sucesso no Brudam.</p>
         <div class="success-detail" id="success-detail"></div>
         <button class="btn btn-success" onclick="reiniciar()">NOVA OCORRÊNCIA</button>
       </div>
@@ -325,7 +325,7 @@
 </div>
 
 <footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;">
-  Última atualização: 24/07/2026 17:33
+  Última atualização: 24/07/2026 17:52
 </footer>
 
 <script>
@@ -369,6 +369,17 @@
       const doc  = j.data[0];
       const semRastreio = (doc.status === 0);
       const dadosArr = doc.dados || [];
+
+      // Verifica se já há Entrega Realizada (código 1) registrada
+      const jaEntregue = dadosArr.some(d =>
+        d.codigo === 1 || d.codigo === '1' ||
+        d.codigo_ocorrencia === 1 || d.codigo_ocorrencia === '1' ||
+        d.codigo_evento === 1 || d.codigo_evento === '1'
+      );
+      if (jaEntregue) {
+        throw new Error('Minuta já finalizada — Entrega Realizada já registrada. Não é possível registrar novamente.');
+      }
+
       const ev = dadosArr.find(d => d.razao_destinatario) || dadosArr[0] || {};
 
       cnpjDest = ev.cnpj_destinatario || '';
