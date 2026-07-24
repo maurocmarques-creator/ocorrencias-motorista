@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/api/minuta",     "dest": "/api/minuta.js" },
+    { "src": "/api/ocorrencia", "dest": "/api/ocorrencia.js" },
+    { "src": "/(.*)",           "dest": "/index.html" }
+  ]
+}
