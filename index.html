@@ -325,8 +325,7 @@
 </div>
 
 <footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;">
-  Última atualização: 24/07/2026 16:42
-</footer>
+  Última atualização: 24/07/2026 17:33</footer>
 
 <script>
   let baseSel   = null;
@@ -362,8 +361,8 @@
       const j = await r.json();
 
       // Falha só se HTTP error ou sem dados de resposta
-      if (!r.ok || !j.data || !j.data[0]) {
-        throw new Error(j.message || 'Minuta não encontrada.');
+      if (!r.ok || !j.data || !j.data[0] || !j.data[0].minuta) {
+        throw new Error(j.message || 'Minuta não pertence a esta base.');
       }
 
       const doc  = j.data[0];
