@@ -55,6 +55,18 @@ export default async function handler(req, res) {
   try {
     const token = await login(b);
 
+    // Valida se a minuta existe nesta base
+    const chk = await fetch(`${b.url}/tracking/ocorrencias/minuta?codigo=${minuta}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const chkJson = await chk.json();
+    const minutaData = chkJson.data ?? chkJson;
+    const exists = Array.isArray(minutaData) ? minutaData.length > 0
+                 : minutaData && Object.keys(minutaData).length > 0;
+    if (!exists || chk.status === 404) {
+      return res.status(404).json({ error: 'Minuta não pertence a esta base.' });
+    }
+
     // Monta o evento
     const evento = {
       codigo: parseInt(codigo),
