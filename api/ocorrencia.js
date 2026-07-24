@@ -39,32 +39,46 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST')    return res.status(405).json({ error: 'Metodo nao permitido.' });
+  if (req.method !== 'POST')    return res.status(405).json({ error: 'Método não permitido.' });
 
-  const { base, minuta, cnpj, codigo, obs, foto_base64, foto_nome } = req.body || {};
+  const {
+    base, minuta, cnpj, codigo, obs,
+    data_evento, nome_recebedor, doc_recebedor,
+    foto_base64, foto_nome
+  } = req.body || {};
 
   const b = BASES[base];
-  if (!b)      return res.status(400).json({ error: 'Base invalida.' });
-  if (!minuta) return res.status(400).json({ error: 'Numero da minuta obrigatorio.' });
-  if (!codigo) return res.status(400).json({ error: 'Codigo da ocorrencia obrigatorio.' });
+  if (!b)      return res.status(400).json({ error: 'Base inválida.' });
+  if (!minuta) return res.status(400).json({ error: 'Número da minuta obrigatório.' });
+  if (!codigo) return res.status(400).json({ error: 'Código da ocorrência obrigatório.' });
 
   try {
     const token = await login(b);
 
+    // Monta o evento
     const evento = {
       codigo: parseInt(codigo),
-      data:   agora()
+      data:   data_evento || agora()
     };
-    if (obs) evento.obs = obs;
 
+    // Monta obs com dados do recebedor (entrega realizada)
+    const partes = [];
+    if (nome_recebedor) partes.push(`Recebedor: ${nome_recebedor}`);
+    if (doc_recebedor)  partes.push(`Doc: ${doc_recebedor}`);
+    if (obs)            partes.push(obs);
+    if (partes.length)  evento.obs = partes.join(' | ');
+
+    // Monta o documento
     const documento = {
       tipo:   'MINUTA',
       minuta: parseInt(minuta),
       eventos: [evento]
     };
 
+    // CNPJ do destinatário (obrigatório pela API quando tipo != MANIFESTO/DESPACHO)
     if (cnpj) documento.cliente = cnpj;
 
+    // Anexa foto se for ocorrência 1 (entrega realizada)
     if (foto_base64 && foto_nome) {
       documento.anexos = [{
         arquivo: {
