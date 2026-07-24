@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
   const {
     base, minuta, cnpj, codigo, obs,
-    data_evento, nome_recebedor, doc_recebedor,
+    data_evento, nome_recebedor, doc_recebedor, grau_parentesco,
     foto_base64, foto_nome
   } = req.body || {};
 
@@ -61,12 +61,17 @@ export default async function handler(req, res) {
       data:   data_evento || agora()
     };
 
-    // Monta obs com dados do recebedor (entrega realizada)
-    const partes = [];
-    if (nome_recebedor) partes.push(`Recebedor: ${nome_recebedor}`);
-    if (doc_recebedor)  partes.push(`Doc: ${doc_recebedor}`);
-    if (obs)            partes.push(obs);
-    if (partes.length)  evento.obs = partes.join(' | ');
+    // Obs livre
+    if (obs) evento.obs = obs;
+
+    // Dados do recebedor (entrega realizada) — campos dedicados da API Brudam
+    if (nome_recebedor || doc_recebedor) {
+      evento.recebedor = {
+        nome:      nome_recebedor || '',
+        documento: doc_recebedor  || ''
+      };
+      if (grau_parentesco) evento.recebedor.grau = grau_parentesco;
+    }
 
     // Monta o documento
     const documento = {
@@ -75,7 +80,7 @@ export default async function handler(req, res) {
       eventos: [evento]
     };
 
-    // CNPJ do destinatário (obrigatório pela API quando tipo != MANIFESTO/DESPACHO)
+    // CNPJ do destinatário (obrigatório pela API)
     if (cnpj) documento.cliente = cnpj;
 
     // Anexa foto se for ocorrência 1 (entrega realizada)
