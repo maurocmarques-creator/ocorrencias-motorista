@@ -523,8 +523,8 @@
 </div>
 </div><!-- /section-minuta -->
 
-<footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;">
-  Última atualização: 24/07/2026 22:45
+<footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;" id="rodape">
+  Carregando...
 </footer>
 
 <script>
@@ -818,14 +818,19 @@
 
       // Monta o bloco de info com o que o Brudam retornou (pode ser vazio)
       const d = j.data || {};
+      // Normaliza nomes de campo — Brudam pode usar variações
+      const motorista = d.motorista || d.nome_motorista || d.motorista_nome || d.nome || '';
+      const placa     = d.placa || d.placa_veiculo || d.veiculo_placa || (d.veiculo && d.veiculo.placa) || '';
+      const entregas  = d.qtd_entregas ?? d.total_entregas ?? d.quantidade_entregas ?? d.notas_count ?? null;
+      const status    = d.status_descricao || d.descricao_status || (d.status && typeof d.status === 'object' ? d.status.descricao : '') || '';
       let html = `
         <div class="info-row"><span class="info-key">Empresa</span><span class="info-val">${nomeBase}</span></div>
         <div class="info-row"><span class="info-key">Manifesto</span><span class="info-val">${id}</span></div>
       `;
-      if (d.motorista)            html += `<div class="info-row"><span class="info-key">Motorista</span><span class="info-val">${d.motorista}</span></div>`;
-      if (d.placa)                html += `<div class="info-row"><span class="info-key">Placa</span><span class="info-val">${d.placa}</span></div>`;
-      if (d.qtd_entregas !== undefined) html += `<div class="info-row"><span class="info-key">Entregas</span><span class="info-val">${d.qtd_entregas}</span></div>`;
-      if (d.status_descricao)     html += `<div class="info-row"><span class="info-key">Status</span><span class="info-val">${d.status_descricao}</span></div>`;
+      if (motorista) html += `<div class="info-row"><span class="info-key">Motorista</span><span class="info-val">${motorista}</span></div>`;
+      if (placa)     html += `<div class="info-row"><span class="info-key">Placa</span><span class="info-val">${placa}</span></div>`;
+      if (entregas !== null) html += `<div class="info-row"><span class="info-key">Entregas</span><span class="info-val">${entregas}</span></div>`;
+      if (status)    html += `<div class="info-row"><span class="info-key">Status</span><span class="info-val">${status}</span></div>`;
 
       // Se o Brudam não tem endpoint de consulta (skip_consulta), avança mesmo assim
       if (!r.ok && !j.skip_consulta) {
@@ -1035,6 +1040,14 @@
     document.getElementById('section-' + item).classList.add('active');
     document.getElementById('nav-' + item).classList.add('active');
   }
+
+  // ── Rodapé com data/hora atual ───────────────────────────
+  (function() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dt = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('rodape').textContent = 'Atualizado em: ' + dt;
+  })();
 </script>
 
 </body>
