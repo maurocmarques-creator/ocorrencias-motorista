@@ -48,39 +48,40 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${token}`
     };
 
-    // 1) Registrar saída efetiva
-    // Tenta snake_case (padrão Brudam) e camelCase como fallback
-    const payloadSaida = {
-      id_manifesto: Number(idMan),
-      km_inicial:   Number(kmInicial),
-      data_saida:   dataSaida
-    };
+    // 1) Registrar saída efetiva — tenta variações de payload até uma funcionar
+    const authBody = { usuario: b.usuario, senha: b.senha };
+    const payloads = [
+      // variação 1: snake_case com auth no body
+      { auth: authBody, id_manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
+      // variação 2: snake_case sem auth
+      { id_manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
+      // variação 3: manifesto (sem prefixo id_) + auth
+      { auth: authBody, manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
+      // variação 4: camelCase com auth
+      { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida },
+      // variação 5: camelCase sem auth
+      { idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida },
+    ];
 
-    let rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-      method:  'POST',
-      headers,
-      body: JSON.stringify(payloadSaida)
-    });
-    let jSaida = await rSaida.json();
+    let rSaida, jSaida;
+    const tentativas = [];
 
-    // Se falhou, tenta camelCase sem campos nulos
-    if (!rSaida.ok && (jSaida.message || '').toLowerCase().includes('dados')) {
-      const payloadCamel = {
-        idMan:     Number(idMan),
-        kmInicial: Number(kmInicial),
-        dataSaida
-      };
+    for (const payload of payloads) {
       rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-        method:  'POST',
-        headers,
-        body: JSON.stringify(payloadCamel)
+        method: 'POST', headers, body: JSON.stringify(payload)
       });
-      jSaida = await rSaida.json();
+      jSaida = await rSaida.json().catch(() => ({}));
+      tentativas.push({ payload: Object.keys(payload), status: rSaida.status, msg: jSaida.message || jSaida.error });
+      if (rSaida.ok) break;
+      // Para se a mensagem NÃO for sobre dados inválidos (outro tipo de erro)
+      const msg = (jSaida.message || jSaida.error || '').toLowerCase();
+      if (!msg.includes('dados') && !msg.includes('campo') && !msg.includes('obrigat')) break;
     }
 
     if (!rSaida.ok) return res.status(rSaida.status).json({
-      error:  jSaida.message || jSaida.error || 'Erro ao registrar saída.',
-      detail: jSaida
+      error:      jSaida.message || jSaida.error || 'Erro ao registrar saída.',
+      detail:     jSaida,
+      tentativas
     });
 
     // 2) Enviar foto como ocorrência/anexo
