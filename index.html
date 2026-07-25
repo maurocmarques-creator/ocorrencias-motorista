@@ -318,6 +318,11 @@
     <div class="card">
       <h2>Etapa 1 — Saída</h2>
 
+      <div id="m-aviso-emissao" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#5d4037;">
+        ⚠️ A data de saída deve ser <strong>posterior à emissão do manifesto</strong>:<br>
+        <span id="m-emissao-txt" style="font-weight:bold;font-size:14px;color:#333;"></span>
+      </div>
+
       <div class="field-group">
         <label class="field-label">Data e Hora da Saída <span style="color:#c00">*</span></label>
         <input type="datetime-local" id="m-data-saida">
@@ -349,6 +354,9 @@
     <div class="card">
       <h2>Dados do Manifesto</h2>
       <div class="info-box" id="m-info2"></div>
+      <div id="m-saida-confirmada" style="margin-top:10px;padding:10px 12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;font-size:13px;color:#1b5e20;display:none;">
+        ✅ Saída registrada em: <strong id="m-saida-dt-txt"></strong> &nbsp;|&nbsp; KM: <strong id="m-saida-km-txt"></strong>
+      </div>
     </div>
 
     <div class="card">
@@ -837,6 +845,29 @@
         throw new Error(j.error || j.message || 'Manifesto não encontrado.');
       }
 
+      // Data de emissão do manifesto (vários nomes possíveis no Brudam)
+      const emissao = d.data_emissao || d.dt_emissao || d.data_manifesto || d.dt_manifesto || d.emissao || d.data || '';
+      const avisoEl = document.getElementById('m-aviso-emissao');
+      const emissaoTxt = document.getElementById('m-emissao-txt');
+      if (emissao) {
+        // Normaliza para "DD/MM/YYYY HH:MM" para exibição
+        let emissaoFmt = emissao;
+        try {
+          const dt = new Date(emissao.replace(' ', 'T'));
+          if (!isNaN(dt)) {
+            const p = n => String(n).padStart(2,'0');
+            emissaoFmt = `${p(dt.getDate())}/${p(dt.getMonth()+1)}/${dt.getFullYear()} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
+            // Define o min do campo de saída
+            const minVal = `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}`;
+            document.getElementById('m-data-saida').min = minVal;
+          }
+        } catch(_) {}
+        emissaoTxt.textContent = emissaoFmt;
+        avisoEl.style.display = 'block';
+      } else {
+        avisoEl.style.display = 'none';
+      }
+
       document.getElementById('m-info').innerHTML  = html;
       document.getElementById('m-info2').innerHTML = html;
       document.getElementById('m-data-saida').value = nowLocalDatetime();
@@ -929,6 +960,15 @@
       mKmInicial = parseInt(kmIni);
       document.getElementById('m-data-chegada').value = nowLocalDatetime();
       document.getElementById('m-km-ini-ref').textContent = mKmInicial;
+
+      // Exibe confirmação da saída no step 3
+      const pad = n => String(n).padStart(2,'0');
+      const dtSaida = new Date(dataSaidaRaw);
+      const dtFmt = `${pad(dtSaida.getDate())}/${pad(dtSaida.getMonth()+1)}/${dtSaida.getFullYear()} ${pad(dtSaida.getHours())}:${pad(dtSaida.getMinutes())}`;
+      document.getElementById('m-saida-dt-txt').textContent = dtFmt;
+      document.getElementById('m-saida-km-txt').textContent = parseInt(kmIni).toLocaleString('pt-BR') + ' km';
+      document.getElementById('m-saida-confirmada').style.display = 'block';
+
       mGo('mstep2','mstep3');
     } catch(e) {
       showErr(err, e.message);
