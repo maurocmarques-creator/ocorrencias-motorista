@@ -48,26 +48,29 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${token}`
     };
 
-    // 1) Tenta registrar saída efetiva no Brudam (endpoint pode não existir em todas as bases)
+    // 1) Registrar saída efetiva
     const authBody = { usuario: b.usuario, senha: b.senha };
-    let saidaStatus = null;
 
-    try {
-      const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          auth:         authBody,
-          id_manifesto: Number(idMan),
-          km_inicial:   Number(kmInicial),
-          data_saida:   dataSaida
-        })
+    const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        auth:         authBody,
+        id_manifesto: Number(idMan),
+        km_inicial:   Number(kmInicial),
+        data_saida:   dataSaida
+      })
+    });
+    const jSaida = await rSaida.json().catch(() => ({}));
+
+    if (!rSaida.ok) {
+      return res.status(rSaida.status).json({
+        error:  jSaida.message || jSaida.error || 'Erro ao registrar saída.',
+        detail: jSaida
       });
-      const jSaida = await rSaida.json().catch(() => ({}));
-      saidaStatus = { ok: rSaida.ok, status: rSaida.status, msg: jSaida.message || jSaida.error, data: jSaida };
-    } catch (_) {
-      saidaStatus = { ok: false, msg: 'Endpoint indisponível' };
     }
+
+    const saidaStatus = { ok: true, data: jSaida };
 
     // 2) Enviar foto como ocorrência/anexo
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
