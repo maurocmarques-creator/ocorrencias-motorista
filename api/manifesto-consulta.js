@@ -32,8 +32,8 @@ export default async function handler(req, res) {
 
   const { base, id } = req.query;
   const b = BASES[base];
-  if (!b)  return res.status(400).json({ error: 'Base invÃ¡lida. Use: porto, ptx ou pex.' });
-  if (!id) return res.status(400).json({ error: 'ParÃ¢metro "id" obrigatÃ³rio.' });
+  if (!b)  return res.status(400).json({ error: 'Base inválida. Use: porto, ptx ou pex.' });
+  if (!id) return res.status(400).json({ error: 'Parâmetro "id" obrigatório.' });
 
   try {
     const token = await login(b);
@@ -41,6 +41,10 @@ export default async function handler(req, res) {
 
     // Tenta diferentes formatos de endpoint do Brudam
     const urls = [
+      `${b.url}/operacional/manifesto/${id}`,
+      `${b.url}/operacional/manifesto/detalhe/${id}`,
+      `${b.url}/operacional/manifesto?id=${id}`,
+      `${b.url}/operacional/manifesto?id_manifesto=${id}`,
       `${b.url}/operacional/consulta/manifesto/${id}`,
       `${b.url}/operacional/consulta/manifesto?manifesto=${id}`,
       `${b.url}/operacional/consulta/manifesto?id=${id}`,
@@ -55,19 +59,23 @@ export default async function handler(req, res) {
         let j;
         try { j = await r.json(); } catch (_) { j = {}; }
 
-        // Se retornou dados vÃ¡lidos, responde com sucesso
-        if (r.ok && j && (j.data !== undefined || j.manifesto !== undefined || j.id !== undefined)) {
-          return res.status(200).json(j.data !== undefined ? j : { data: j });
+        // Se retornou dados válidos, responde com sucesso
+        if (r.ok && j) {
+          // Normaliza: pode vir como j.data, j.manifesto, j.dados, ou direto
+          const data = j.data ?? j.manifesto ?? j.i'dados ?? (j.id || j.id_manifesto ? j : undefined);
+          if (data !== undefined) {
+            return res.status(200).json({ data });
+          }
         }
 
-        // Guarda a Ãºltima resposta para debug
+        // Guarda a última resposta não-404 para debug
         if (r.status !== 404) { lastStatus = r.status; lastBody = j; }
       } catch (_) {}
     }
 
-    // Nenhum endpoint funcionou â retorna o que o Brudam disse + flag para o front pular a consulta
+    // Nenhum endpoint funcionou — retorna o que o Brudam disse + flag para o front pular a consulta
     return res.status(422).json({
-      error: lastBody?.message || lastBody?.error || 'Manifesto nÃ£o encontrado no Brudam.',
+      error: lastBody?.message || lastBody?.error || 'Manifesto não encontrado no Brudam.',
       skip_consulta: true,
       _debug: lastBody
     });
