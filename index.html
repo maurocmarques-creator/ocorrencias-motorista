@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Registro de OcorrÃªncias</title>
+  <title>Registro de Ocorrências</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; background: #f0f2f5; min-height: 100vh; }
@@ -193,7 +193,7 @@
     .field-group { margin-bottom: 14px; }
     .field-group:last-child { margin-bottom: 0; }
 
-    /* ââ Menu de navegaÃ§Ã£o ââ */
+    /* ── Menu de navegação ── */
     .nav-menu {
       background: #fff;
       display: flex;
@@ -260,8 +260,8 @@
 <body>
 
 <header>
-  <h1>Registro de OcorrÃªncias</h1>
-  <p>Az Portoex Â· PTX Transporte Â· Pex LogÃ­stica</p>
+  <h1>Registro de Ocorrências</h1>
+  <p>Az Portoex · PTX Transporte · Pex Logística</p>
 </header>
 
 <nav class="nav-menu">
@@ -269,11 +269,11 @@
   <div class="nav-item active" id="nav-minuta" onclick="selectMenu('minuta')">MINUTA</div>
 </nav>
 
-<!-- ââ SeÃ§Ã£o Manifesto ââ -->
+<!-- ── Seção Manifesto ── -->
 <div id="section-manifesto" class="menu-section">
 <div class="container">
 
-  <!-- ââ MSTEP 1: Empresa + ID Manifesto âââââââââââââââ -->
+  <!-- ── MSTEP 1: Empresa + ID Manifesto ─────────────── -->
   <div id="mstep1" class="mstep active">
     <div class="card">
       <h2>1. Selecione a Empresa</h2>
@@ -291,13 +291,13 @@
         <div class="radio-option" onclick="selectMBase(this,'pex')">
           <input type="radio" name="mbase" value="pex">
           <div class="radio-dot"></div>
-          <span class="radio-label">Pex LogÃ­stica</span>
+          <span class="radio-label">Pex Logística</span>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>2. NÃºmero do Manifesto</h2>
+      <h2>2. Número do Manifesto</h2>
       <div class="field-group">
         <label class="field-label">ID Manifesto</label>
         <input type="number" id="m-id" placeholder="Ex: 1234" inputmode="numeric" pattern="[0-9]*">
@@ -307,19 +307,19 @@
     </div>
   </div>
 
-  <!-- ââ MSTEP 2: SaÃ­da âââââââââââââââââââââââââââââââââ -->
+  <!-- ── MSTEP 2: Saída ───────────────────────────────── -->
   <div id="mstep2" class="mstep">
     <div class="card">
       <h2>Dados do Manifesto</h2>
       <div class="info-box" id="m-info"></div>
-      <button class="btn btn-secondary" onclick="mGo('mstep2','mstep1')" style="margin-top:0">â Voltar</button>
+      <button class="btn btn-secondary" onclick="mGo('mstep2','mstep1')" style="margin-top:0">← Voltar</button>
     </div>
 
     <div class="card">
-      <h2>Etapa 1 â SaÃ­da</h2>
+      <h2>Etapa 1 — Saída</h2>
 
       <div class="field-group">
-        <label class="field-label">Data e Hora da SaÃ­da <span style="color:#c00">*</span></label>
+        <label class="field-label">Data e Hora da Saída <span style="color:#c00">*</span></label>
         <input type="datetime-local" id="m-data-saida">
       </div>
 
@@ -329,22 +329,22 @@
       </div>
 
       <div class="field-group">
-        <label class="field-label">ð· Foto do HodÃ´metro â SaÃ­da <span style="color:#c00">*</span></label>
+        <label class="field-label">📷 Foto do Hodômetro — Saída <span style="color:#c00">*</span></label>
         <div class="foto-area" onclick="document.getElementById('mfoto-saida-input').click()">
           <input type="file" id="mfoto-saida-input" accept="image/*" capture="camera" onchange="onMFotoSaidaChange()">
-          <div class="foto-icon" id="mfoto-saida-icon">ð·</div>
-          <div class="foto-txt" id="mfoto-saida-txt">Toque para fotografar o hodÃ´metro</div>
-          <img id="mfoto-saida-preview" alt="HodÃ´metro saÃ­da" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
-          <div id="mfoto-saida-badge" class="foto-badge" style="display:none;">â Foto selecionada</div>
+          <div class="foto-icon" id="mfoto-saida-icon">📷</div>
+          <div class="foto-txt" id="mfoto-saida-txt">Toque para fotografar o hodômetro</div>
+          <img id="mfoto-saida-preview" alt="Hodômetro saída" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
+          <div id="mfoto-saida-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
         </div>
       </div>
 
       <div id="merr2" class="error-box"></div>
-      <button class="btn btn-primary" id="mbtn-saida" onclick="registrarSaida()">REGISTRAR SAÃDA</button>
+      <button class="btn btn-primary" id="mbtn-saida" onclick="registrarSaida()">REGISTRAR SAÍDA</button>
     </div>
   </div>
 
-  <!-- ââ MSTEP 3: FinalizaÃ§Ã£o âââââââââââââââââââââââââââ -->
+  <!-- ── MSTEP 3: Finalização ─────────────────────────── -->
   <div id="mstep3" class="mstep">
     <div class="card">
       <h2>Dados do Manifesto</h2>
@@ -352,7 +352,7 @@
     </div>
 
     <div class="card">
-      <h2>Etapa 2 â FinalizaÃ§Ã£o</h2>
+      <h2>Etapa 2 — Finalização</h2>
 
       <div class="field-group">
         <label class="field-label">Data e Hora de Chegada <span style="color:#c00">*</span></label>
@@ -362,17 +362,17 @@
       <div class="field-group">
         <label class="field-label">KM Final <span style="color:#c00">*</span></label>
         <input type="number" id="m-km-final" placeholder="Ex: 46500" inputmode="numeric" pattern="[0-9]*" oninput="validarKmFinal()">
-        <div id="m-km-warn" class="km-warn">â ï¸ KM Final nÃ£o pode ser menor que o KM Inicial (<span id="m-km-ini-ref"></span> km).</div>
+        <div id="m-km-warn" class="km-warn">⚠️ KM Final não pode ser menor que o KM Inicial (<span id="m-km-ini-ref"></span> km).</div>
       </div>
 
       <div class="field-group">
-        <label class="field-label">ð· Foto do HodÃ´metro â Chegada <span style="color:#c00">*</span></label>
+        <label class="field-label">📷 Foto do Hodômetro — Chegada <span style="color:#c00">*</span></label>
         <div class="foto-area" onclick="document.getElementById('mfoto-chegada-input').click()">
           <input type="file" id="mfoto-chegada-input" accept="image/*" capture="camera" onchange="onMFotoChegadaChange()">
-          <div class="foto-icon" id="mfoto-chegada-icon">ð·</div>
-          <div class="foto-txt" id="mfoto-chegada-txt">Toque para fotografar o hodÃ´metro</div>
-          <img id="mfoto-chegada-preview" alt="HodÃ´metro chegada" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
-          <div id="mfoto-chegada-badge" class="foto-badge" style="display:none;">â Foto selecionada</div>
+          <div class="foto-icon" id="mfoto-chegada-icon">📷</div>
+          <div class="foto-txt" id="mfoto-chegada-txt">Toque para fotografar o hodômetro</div>
+          <img id="mfoto-chegada-preview" alt="Hodômetro chegada" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
+          <div id="mfoto-chegada-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
         </div>
       </div>
 
@@ -381,11 +381,11 @@
     </div>
   </div>
 
-  <!-- ââ MSTEP 4: Sucesso ââââââââââââââââââââââââââââââââ -->
+  <!-- ── MSTEP 4: Sucesso ──────────────────────────────── -->
   <div id="mstep4" class="mstep">
     <div class="card">
       <div class="success-card">
-        <div class="success-icon">â</div>
+        <div class="success-icon">✅</div>
         <div class="success-title">Manifesto Finalizado!</div>
         <p class="success-sub">Manifesto encerrado com sucesso no Brudam.</p>
         <div class="success-detail" id="m-success-detail"></div>
@@ -397,11 +397,11 @@
 </div>
 </div><!-- /section-manifesto -->
 
-<!-- ââ SeÃ§Ã£o Minuta ââ -->
+<!-- ── Seção Minuta ── -->
 <div id="section-minuta" class="menu-section active">
 <div class="container">
 
-  <!-- ââ STEP 1: Empresa + Minuta âââââââââââââââââââââââ -->
+  <!-- ── STEP 1: Empresa + Minuta ─────────────────────── -->
   <div id="step1" class="step active">
     <div class="card">
       <h2>1. Selecione a Empresa</h2>
@@ -419,13 +419,13 @@
         <div class="radio-option" onclick="selectBase(this,'pex')">
           <input type="radio" name="base" value="pex">
           <div class="radio-dot"></div>
-          <span class="radio-label">Pex LogÃ­stica</span>
+          <span class="radio-label">Pex Logística</span>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>2. NÃºmero da Minuta</h2>
+      <h2>2. Número da Minuta</h2>
       <div class="field-group">
         <label class="field-label">Minuta</label>
         <input type="number" id="minuta" placeholder="Ex: 291065" inputmode="numeric" pattern="[0-9]*">
@@ -435,44 +435,44 @@
     </div>
   </div>
 
-  <!-- ââ STEP 2: OcorrÃªncia ââââââââââââââââââââââââââââ -->
+  <!-- ── STEP 2: Ocorrência ──────────────────────────── -->
   <div id="step2" class="step">
     <div class="card">
       <h2>Dados da Minuta</h2>
       <div class="info-box" id="minuta-info"></div>
-      <button class="btn btn-secondary" onclick="voltar()">â Voltar</button>
+      <button class="btn btn-secondary" onclick="voltar()">← Voltar</button>
     </div>
 
     <div class="card">
-      <h2>3. Selecione a OcorrÃªncia</h2>
+      <h2>3. Selecione a Ocorrência</h2>
 
       <div class="field-group">
-        <label class="field-label">OcorrÃªncia</label>
+        <label class="field-label">Ocorrência</label>
         <select id="ocorrencia" onchange="onOcorrenciaChange()">
           <option value="">-- Selecione --</option>
-          <option value="672">672 Â· CHEGADA APOS HORARIO DE RECEBIMENTO</option>
-          <option value="207">207 Â· CHEGADA CONFIRMADA</option>
-          <option value="77">77 Â· CLIENTEDESTINO CUTOU DE ENDERECO</option>
-          <option value="50">50 Â· COLETA CAMCELADY </option>
-          <option value="147">147 Â· COLETA REALISÁDAMORMALMENTE</option>
-          <option value="21">21 Â· DESTINATARIO AUSENTE</option>
-          <option value="6">6 Â· ENDERECO NAO LOCALIZADO</option>
-          <option value="531">531 Â· ENTREGA AGENDADA</option>
-          <option value="1">1 Â· ENTREGA REALIZADA</option>
-          <option value="667">667 Â· FALTA DE MERCADORIA (PARCIAL)</option>
-          <option value="135">135 Â· MATERIAL RECUSADO PELO CLIENTE</option>
-          <option value="9">9 Â· MERCADORIA EM DESACORDO COM PEDIDO</option>
-          <option value="670">670 Â· MERCADORIA NAO FOI CARREGADA</option>
-          <option value="512">512 Â· RECUSADA POR FALTA DE AGENDAMENTO</option>
+          <option value="672">672 · CHEGADA APOS HORARIO DE RECEBIMENTO</option>
+          <option value="207">207 · CHEGADA CONFIRMADA</option>
+          <option value="77">77 · CLIENTE DESTINO MUDOU DE ENDERECO</option>
+          <option value="50">50 · COLETA CANCELADA</option>
+          <option value="147">147 · COLETA REALIZADA NORMALMENTE</option>
+          <option value="21">21 · DESTINATARIO AUSENTE</option>
+          <option value="6">6 · ENDERECO NAO LOCALIZADO</option>
+          <option value="531">531 · ENTREGA AGENDADA</option>
+          <option value="1">1 · ENTREGA REALIZADA</option>
+          <option value="667">667 · FALTA DE MERCADORIA (PARCIAL)</option>
+          <option value="135">135 · MATERIAL RECUSADO PELO CLIENTE</option>
+          <option value="9">9 · MERCADORIA EM DESACORDO COM PEDIDO</option>
+          <option value="670">670 · MERCADORIA NAO FOI CARREGADA</option>
+          <option value="512">512 · RECUSADA POR FALTA DE AGENDAMENTO</option>
         </select>
       </div>
 
       <div class="field-group">
-        <label class="field-label">ObservaÃ§Ã£o (opcional)</label>
-        <input type="text" id="obs" placeholder="Digite uma observaÃ§Ã£o...">
+        <label class="field-label">Observação (opcional)</label>
+        <input type="text" id="obs" placeholder="Digite uma observação...">
       </div>
 
-      <!-- Campos extras â aparecem sÃ³ quando ocorrÃªncia = 1 -->
+      <!-- Campos extras — aparecem só quando ocorrência = 1 -->
       <div id="entrega-section" style="display:none;">
         <div class="field-group">
           <label class="field-label">Data da Entrega <span style="color:#c00">*</span></label>
@@ -491,31 +491,31 @@
           <input type="text" id="nome-recebedor" placeholder="Nome completo de quem recebeu">
         </div>
         <div class="field-group">
-          <label class="field-label">ð· Foto do Comprovante <span style="color:#c00">*</span></label>
+          <label class="field-label">📷 Foto do Comprovante <span style="color:#c00">*</span></label>
           <div class="foto-area" onclick="document.getElementById('foto-input').click()">
             <input type="file" id="foto-input" accept="image/*" capture="camera" onchange="onFotoChange()">
-            <div class="foto-icon" id="foto-icon">ð·</div>
+            <div class="foto-icon" id="foto-icon">📷</div>
             <div class="foto-txt" id="foto-txt">Toque para tirar foto ou selecionar</div>
-            <img id="foto-preview" alt="PrÃ©via da foto">
-            <div id="foto-badge" class="foto-badge" style="display:none;">â Foto selecionada</div>
+            <img id="foto-preview" alt="Prévia da foto">
+            <div id="foto-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
           </div>
         </div>
       </div>
 
       <div id="err2" class="error-box"></div>
-      <button class="btn btn-primary" id="btn-registrar" onclick="registrar()">REGISTRAR OCORRÃNCIA</button>
+      <button class="btn btn-primary" id="btn-registrar" onclick="registrar()">REGISTRAR OCORRÊNCIA</button>
     </div>
   </div>
 
-  <!-- ââ STEP 3: Sucesso âââââââââââââââââââââââââââââââ -->
+  <!-- ── STEP 3: Sucesso ─────────────────────────────── -->
   <div id="step3" class="step">
     <div class="card">
       <div class="success-card">
-        <div class="success-icon">â</div>
+        <div class="success-icon">✅</div>
         <div class="success-title">Registrado!</div>
-        <p class="success-sub">OcorrÃªncia registrada com sucesso no Brudam.</p>
+        <p class="success-sub">Ocorrência registrada com sucesso no Brudam.</p>
         <div class="success-detail" id="success-detail"></div>
-        <button class="btn btn-success" onclick="reiniciar()">NOVA OCORRÃNCIA</button>
+        <button class="btn btn-success" onclick="reiniciar()">NOVA OCORRÊNCIA</button>
       </div>
     </div>
   </div>
@@ -524,7 +524,7 @@
 </div><!-- /section-minuta -->
 
 <footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;">
-  Ãltima atualizaÃ§Ã£o: 24/07/2026 22:45
+  Última atualização: 24/07/2026 22:45
 </footer>
 
 <script>
@@ -533,7 +533,7 @@
   let fotoB64   = null;
   let fotoNome  = null;
 
-  // ââ SeleÃ§Ã£o de base ââââââââââââââââââââââââââââââââââ
+  // ── Seleção de base ──────────────────────────────────
   function selectBase(el, base) {
     document.querySelectorAll('.radio-option').forEach(r => r.classList.remove('selected'));
     el.classList.add('selected');
@@ -543,14 +543,14 @@
     if (err) { err.textContent = ''; err.style.display = 'none'; }
   }
 
-  // ââ Buscar minuta âââââââââââââââââââââââââââââââââââ
+  // ── Buscar minuta ────────────────────────────────────
   async function buscarMinuta() {
     const err = document.getElementById('err1');
     err.style.display = 'none';
 
     if (!baseSel) return showErr(err, 'Selecione a empresa.');
     const mn = document.getElementById('minuta').value.trim();
-    if (!mn) return showErr(err, 'Informe o nÃºmero da minuta.');
+    if (!mn) return showErr(err, 'Informe o número da minuta.');
 
     const btn = document.getElementById('btn-buscar');
     btn.innerHTML = '<span class="spinner"></span>Buscando...';
@@ -562,37 +562,37 @@
 
       // Valida se a minuta realmente pertence a esta base
       if (!r.ok || !j.data || !j.data[0] || !j.data[0].dados) {
-        throw new Error('Minuta nÃ£o pertence a esta base.');
+        throw new Error('Minuta não pertence a esta base.');
       }
 
       const doc  = j.data[0];
       const semRastreio = (doc.status === 0);
       const dadosArr = doc.dados || [];
 
-      // Verifica se jÃ¡ hÃ¡ Entrega Realizada (cÃ³digo 1) registrada
+      // Verifica se já há Entrega Realizada (código 1) registrada
       const jaEntregue = dadosArr.some(d =>
         d.codigo === 1 || d.codigo === '1' ||
         d.codigo_ocorrencia === 1 || d.codigo_ocorrencia === '1' ||
         d.codigo_evento === 1 || d.codigo_evento === '1'
       );
       if (jaEntregue) {
-        throw new Error('Minuta jÃ¡ finalizada â Entrega Realizada jÃ¡ registrada. NÃ£o Ã© possÃ­vel registrar novamente.');
+        throw new Error('Minuta já finalizada — Entrega Realizada já registrada. Não é possível registrar novamente.');
       }
 
       const ev = dadosArr.find(d => d.razao_destinatario) || dadosArr[0] || {};
 
       cnpjDest = ev.cnpj_destinatario || '';
 
-      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex LogÃ­stica' }[baseSel];
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
 
       let html = `
         <div class="info-row"><span class="info-key">Empresa</span><span class="info-val">${nomeBase}</span></div>
         <div class="info-row"><span class="info-key">Minuta</span><span class="info-val">${doc.documento}</span></div>
       `;
       if (ev.razao_remetente)    html += `<div class="info-row"><span class="info-key">Remetente</span><span class="info-val">${ev.razao_remetente}</span></div>`;
-      if (ev.razao_destinatario) html += `<div class="info-row"><span class="info-key">DestinatÃ¡rio</span><span class="info-val">${ev.razao_destinatario}</span></div>`;
+      if (ev.razao_destinatario) html += `<div class="info-row"><span class="info-key">Destinatário</span><span class="info-val">${ev.razao_destinatario}</span></div>`;
       if (ev.previsao_entrega)   html += `<div class="info-row"><span class="info-key">Prev. Entrega</span><span class="info-val">${ev.previsao_entrega}</span></div>`;
-      if (semRastreio) html += `<div style="font-size:12px;color:#856404;background:#fff3cd;border-radius:4px;padding:6px 8px;margin-top:8px;">Minuta sem histÃ³rico de rastreio. Pode registrar normalmente.</div>`;
+      if (semRastreio) html += `<div style="font-size:12px;color:#856404;background:#fff3cd;border-radius:4px;padding:6px 8px;margin-top:8px;">Minuta sem histórico de rastreio. Pode registrar normalmente.</div>`;
 
       document.getElementById('minuta-info').innerHTML = html;
 
@@ -605,13 +605,13 @@
     }
   }
 
-  // ââ MudanÃ§a de ocorrÃªncia ââââââââââââââââââââââââââââ
+  // ── Mudança de ocorrência ────────────────────────────
   function onOcorrenciaChange() {
     const cod = document.getElementById('ocorrencia').value;
     const es  = document.getElementById('entrega-section');
     es.style.display = cod === '1' ? 'block' : 'none';
     if (cod === '1') {
-      // Preencher data e hora atuais como padrÃ£o
+      // Preencher data e hora atuais como padrão
       const now = new Date();
       const pad = n => String(n).padStart(2,'0');
       document.getElementById('data-entrega').value =
@@ -623,7 +623,7 @@
     }
   }
 
-  // ââ SeleÃ§Ã£o de foto ââââââââââââââââââââââââââââââââââ
+  // ── Seleção de foto ──────────────────────────────────
   function onFotoChange() {
     const file = document.getElementById('foto-input').files[0];
     if (!file) return;
@@ -650,13 +650,13 @@
     document.getElementById('foto-badge').style.display = 'none';
   }
 
-  // ââ Registrar ocorrÃªncia âââââââââââââââââââââââââââââ
+  // ── Registrar ocorrência ─────────────────────────────
   async function registrar() {
     const err = document.getElementById('err2');
     err.style.display = 'none';
 
     const cod = document.getElementById('ocorrencia').value;
-    if (!cod) return showErr(err, 'Selecione uma ocorrÃªncia.');
+    if (!cod) return showErr(err, 'Selecione uma ocorrência.');
 
     let dataEvento = null;
     let nomeRecebedor = null;
@@ -672,7 +672,7 @@
       if (!horaEnt)       return showErr(err, 'Informe a hora da entrega.');
       if (!docRecebedor)  return showErr(err, 'Informe o documento do recebedor.');
       if (!nomeRecebedor) return showErr(err, 'Informe o nome do recebedor.');
-      if (!fotoB64)       return showErr(err, 'A foto do comprovante Ã© obrigatÃ³ria.');
+      if (!fotoB64)       return showErr(err, 'A foto do comprovante é obrigatória.');
 
       dataEvento = `${dataEnt} ${horaEnt}:00`;
     }
@@ -706,12 +706,12 @@
       if (!r.ok) throw new Error(j.error || j.message || 'Erro ao registrar.');
 
       const ocNome   = document.getElementById('ocorrencia').selectedOptions[0].text;
-      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex LogÃ­stica' }[baseSel];
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
 
       document.getElementById('success-detail').innerHTML = `
         <p><strong>Empresa:</strong> ${nomeBase}</p>
         <p><strong>Minuta:</strong> ${minuta}</p>
-        <p><strong>OcorrÃªncia:</strong> ${ocNome}</p>
+        <p><strong>Ocorrência:</strong> ${ocNome}</p>
         ${dataEvento   ? `<p><strong>Data/Hora:</strong> ${dataEvento.substring(0,16).replace('T',' ')}</p>` : ''}
         ${nomeRecebedor ? `<p><strong>Recebedor:</strong> ${nomeRecebedor}</p>` : ''}
         ${docRecebedor  ? `<p><strong>Documento:</strong> ${docRecebedor}</p>` : ''}
@@ -722,12 +722,12 @@
     } catch(e) {
       showErr(err, e.message);
     } finally {
-      btn.innerHTML = 'REGISTRAR OCORRÃNCIA';
+      btn.innerHTML = 'REGISTRAR OCORRÊNCIA';
       btn.disabled  = false;
     }
   }
 
-  // ââ Reiniciar ââââââââââââââââââââââââââââââââââââââââ
+  // ── Reiniciar ────────────────────────────────────────
   function reiniciar() {
     baseSel = null; cnpjDest = null; fotoB64 = null; fotoNome = null;
     document.getElementById('minuta').value        = '';
@@ -747,7 +747,7 @@
 
   function voltar() { go('step2','step1'); }
 
-  // ââ Helpers ââââââââââââââââââââââââââââââââââââââââââ
+  // ── Helpers ──────────────────────────────────────────
   function go(from, to) {
     document.getElementById(from).classList.remove('active');
     document.getElementById(to).classList.add('active');
@@ -758,9 +758,9 @@
     el.style.display = 'block';
   }
 
-  // ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ══════════════════════════════════════════════════════
   // MANIFESTO
-  // ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ══════════════════════════════════════════════════════
   let mBaseSel       = null;
   let mManifestoId   = null;
   let mManifestoData = null;
@@ -791,7 +791,7 @@
   }
 
   function datetimeLocalToApi(val) {
-    // "2024-01-15T08:30" â "2024-01-15 08:30:00"
+    // "2024-01-15T08:30" → "2024-01-15 08:30:00"
     return val ? val.replace('T',' ') + ':00' : null;
   }
 
@@ -814,7 +814,7 @@
       mManifestoId   = id;
       mManifestoData = j.data || {};
 
-      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex LogÃ­stica' }[mBaseSel];
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[mBaseSel];
 
       // Monta o bloco de info com o que o Brudam retornou (pode ser vazio)
       const d = j.data || {};
@@ -827,9 +827,9 @@
       if (d.qtd_entregas !== undefined) html += `<div class="info-row"><span class="info-key">Entregas</span><span class="info-val">${d.qtd_entregas}</span></div>`;
       if (d.status_descricao)     html += `<div class="info-row"><span class="info-key">Status</span><span class="info-val">${d.status_descricao}</span></div>`;
 
-      // Se o Brudam nÃ£o tem endpoint de consulta (skip_consulta), avanÃ§a mesmo assim
+      // Se o Brudam não tem endpoint de consulta (skip_consulta), avança mesmo assim
       if (!r.ok && !j.skip_consulta) {
-        throw new Error(j.error || j.message || 'Manifesto nÃ£o encontrado.');
+        throw new Error(j.error || j.message || 'Manifesto não encontrado.');
       }
 
       document.getElementById('m-info').innerHTML  = html;
@@ -890,12 +890,12 @@
     const dataSaidaRaw = document.getElementById('m-data-saida').value;
     const kmIni = document.getElementById('m-km-inicial').value.trim();
 
-    if (!dataSaidaRaw)   return showErr(err, 'Informe a data e hora de saÃ­da.');
+    if (!dataSaidaRaw)   return showErr(err, 'Informe a data e hora de saída.');
     if (!kmIni)          return showErr(err, 'Informe o KM inicial.');
-    if (!mFotoSaidaB64)  return showErr(err, 'A foto do hodÃ´metro de saÃ­da Ã© obrigatÃ³ria.');
+    if (!mFotoSaidaB64)  return showErr(err, 'A foto do hodômetro de saída é obrigatória.');
 
     const btn = document.getElementById('mbtn-saida');
-    btn.innerHTML = '<span class="spinner"></span>Registrando saÃ­da...';
+    btn.innerHTML = '<span class="spinner"></span>Registrando saída...';
     btn.disabled = true;
 
     try {
@@ -914,7 +914,7 @@
       });
       const j = await r.json();
       if (!r.ok) {
-        let msg = j.error || j.message || 'Erro ao registrar saÃ­da efetiva.';
+        let msg = j.error || j.message || 'Erro ao registrar saída efetiva.';
         const det = j.detail?.message || (typeof j.detail === 'string' ? j.detail : '');
         if (det) msg += '<br><small style="opacity:.8">' + det + '</small>';
         showErr(err, msg, true);
@@ -928,7 +928,7 @@
     } catch(e) {
       showErr(err, e.message);
     } finally {
-      btn.innerHTML = 'REGISTRAR SAÃDA';
+      btn.innerHTML = 'REGISTRAR SAÍDA';
       btn.disabled = false;
     }
   }
@@ -942,8 +942,8 @@
 
     if (!dataChegadaRaw)    return showErr(err, 'Informe a data e hora de chegada.');
     if (!kmFin)             return showErr(err, 'Informe o KM final.');
-    if (kmFin < mKmInicial) return showErr(err, `KM Final (${kmFin}) nÃ£o pode ser menor que o KM Inicial (${mKmInicial}). Verifique o valor.`);
-    if (!mFotoChegadaB64)   return showErr(err, 'A foto do hodÃ´metro de chegada Ã© obrigatÃ³ria.');
+    if (kmFin < mKmInicial) return showErr(err, `KM Final (${kmFin}) não pode ser menor que o KM Inicial (${mKmInicial}). Verifique o valor.`);
+    if (!mFotoChegadaB64)   return showErr(err, 'A foto do hodômetro de chegada é obrigatória.');
 
     const btn = document.getElementById('mbtn-finalizar');
     btn.innerHTML = '<span class="spinner"></span>Finalizando...';
@@ -968,9 +968,9 @@
         let msg = j.error || j.message || 'Erro ao finalizar manifesto.';
         const pendentes = j.minutas_pendentes || [];
         if (pendentes.length > 0) {
-          msg += '<br><br><strong>â ï¸ Minutas sem ocorrÃªncia:</strong><br>' +
+          msg += '<br><br><strong>⚠️ Minutas sem ocorrência:</strong><br>' +
                  pendentes.map(m => '&bull; Minuta ' + m).join('<br>') +
-                 '<br><small style="opacity:.8">Registre entrega ou pendÃªncia para cada minuta antes de finalizar.</small>';
+                 '<br><small style="opacity:.8">Registre entrega ou pendência para cada minuta antes de finalizar.</small>';
         } else {
           const det = j.detail?.message || (typeof j.detail === 'string' ? j.detail : '');
           if (det) msg += '<br><small style="opacity:.8">' + det + '</small>';
@@ -979,7 +979,7 @@
         return;
       }
 
-      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex LogÃ­stica' }[mBaseSel];
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[mBaseSel];
       document.getElementById('m-success-detail').innerHTML = `
         <p><strong>Empresa:</strong> ${nomeBase}</p>
         <p><strong>Manifesto:</strong> ${mManifestoId}</p>
@@ -1011,7 +1011,7 @@
       const el = document.getElementById(id);
       el.textContent = ''; el.style.display = 'none';
     });
-    // Reset fotos saÃ­da
+    // Reset fotos saída
     document.getElementById('mfoto-saida-input').value = '';
     document.getElementById('mfoto-saida-preview').style.display = 'none';
     document.getElementById('mfoto-saida-icon').style.display = 'block';
@@ -1028,7 +1028,7 @@
     mGo('mstep4','mstep1');
   }
 
-  // ââ Menu principal ââââââââââââââââââââââââââââââââââââââ
+  // ── Menu principal ──────────────────────────────────────
   function selectMenu(item) {
     document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
