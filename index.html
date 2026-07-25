@@ -76,7 +76,7 @@
 
     label.field-label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
 
-    input[type=text], input[type=number], select, textarea {
+    input[type=text], input[type=number], input[type=password], select, textarea {
       width: 100%;
       padding: 13px 12px;
       border: 1.5px solid #ddd;
@@ -342,6 +342,16 @@
           <img id="mfoto-saida-preview" alt="Hodômetro saída" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
           <div id="mfoto-saida-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
         </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">🔑 Usuário Brudam <span style="color:#c00">*</span></label>
+        <input type="text" id="m-brudam-usuario" placeholder="Ex: MCM" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">🔒 Senha Brudam <span style="color:#c00">*</span></label>
+        <input type="password" id="m-brudam-senha" placeholder="Senha do operador" autocomplete="off">
       </div>
 
       <div id="merr2" class="error-box"></div>
@@ -923,12 +933,16 @@
     const err = document.getElementById('merr2');
     err.style.display = 'none';
 
-    const dataSaidaRaw = document.getElementById('m-data-saida').value;
-    const kmIni = document.getElementById('m-km-inicial').value.trim();
+    const dataSaidaRaw  = document.getElementById('m-data-saida').value;
+    const kmIni         = document.getElementById('m-km-inicial').value.trim();
+    const brudamUsuario = document.getElementById('m-brudam-usuario').value.trim();
+    const brudamSenha   = document.getElementById('m-brudam-senha').value;
 
     if (!dataSaidaRaw)   return showErr(err, 'Informe a data e hora de saída.');
     if (!kmIni)          return showErr(err, 'Informe o KM inicial.');
     if (!mFotoSaidaB64)  return showErr(err, 'A foto do hodômetro de saída é obrigatória.');
+    if (!brudamUsuario)  return showErr(err, 'Informe o usuário Brudam.');
+    if (!brudamSenha)    return showErr(err, 'Informe a senha Brudam.');
 
     const btn = document.getElementById('mbtn-saida');
     btn.innerHTML = '<span class="spinner"></span>Registrando saída...';
@@ -939,13 +953,14 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          base:       mBaseSel,
-          idMan:      parseInt(mManifestoId),
-          kmInicial:  parseInt(kmIni),
-          dataSaida:  datetimeLocalToApi(dataSaidaRaw),
-          fotoNome:   mFotoSaidaNome || `hodometro_saida_${mManifestoId}.jpg`,
-          fotoDados:  mFotoSaidaB64,
-          cliente:    mManifestoData?.cliente || ''
+          base:          mBaseSel,
+          idMan:         parseInt(mManifestoId),
+          kmInicial:     parseInt(kmIni),
+          fotoNome:      mFotoSaidaNome || `hodometro_saida_${mManifestoId}.jpg`,
+          fotoDados:     mFotoSaidaB64,
+          cliente:       mManifestoData?.cliente || '',
+          brudamUsuario: brudamUsuario,
+          brudamSenha:   brudamSenha
         })
       });
       const j = await r.json();
@@ -1051,6 +1066,8 @@
     document.getElementById('m-km-final').value = '';
     document.getElementById('m-data-saida').value = '';
     document.getElementById('m-data-chegada').value = '';
+    document.getElementById('m-brudam-usuario').value = '';
+    document.getElementById('m-brudam-senha').value   = '';
     document.getElementById('m-km-warn').style.display = 'none';
     ['merr1','merr2','merr3'].forEach(id => {
       const el = document.getElementById(id);
