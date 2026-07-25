@@ -16,14 +16,11 @@ const BASES = {
   }
 };
 
-// Converte "YYYY-MM-DDTHH:MM" para "DD/MM/YYYY HH:MM:SS" (exatamente 19 chars — formato Brudam)
-function toBrudamDateTime(dt) {
-  if (!dt) return '';
-  const clean = dt.replace('T', ' ');
-  const [datePart = '', timePart = '00:00'] = clean.split(' ');
-  const [y, m, d] = datePart.split('-');
-  const time = timePart.length === 5 ? timePart + ':00' : timePart;
-  return `${d}/${m}/${y} ${time}`;
+// Timestamp atual no formato Brudam: "DD/MM/YYYY HH:MM:SS" (exatamente 19 chars)
+function nowBrudam() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
 async function login(base) {
@@ -40,16 +37,15 @@ async function login(base) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo nao permitido.' });
 
-  const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente } = req.body || {};
+  const { base, idMan, kmInicial, fotoNome, fotoDados, cliente } = req.body || {};
 
   const b = BASES[base];
-  if (!b) return res.status(400).json({ error: 'Base inválida.' });
-  if (!idMan) return res.status(400).json({ error: 'idMan obrigatório.' });
-  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatório.' });
-  if (!dataSaida) return res.status(400).json({ error: 'dataSaida obrigatório.' });
-  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
+  if (!b) return res.status(400).json({ error: 'Base invalida.' });
+  if (!idMan) return res.status(400).json({ error: 'idMan obrigatorio.' });
+  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatorio.' });
+  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodometro obrigatoria.' });
 
   try {
     const token = await login(b);
@@ -60,10 +56,11 @@ export default async function handler(req, res) {
 
     const authBody = { usuario: b.usuario, senha: b.senha };
 
-    // Formato exigido pelo Brudam: "DD/MM/YYYY HH:MM:SS" (19 chars), campo dataSaida
-    const dataSaidaBrudam = toBrudamDateTime(dataSaida);
+    // Usa o momento exato em que o motorista apertou o botao (timestamp do servidor)
+    // Formato Brudam: "DD/MM/YYYY HH:MM:SS" (exatamente 19 chars)
+    const dataSaidaBrudam = nowBrudam();
 
-    // 1) Registrar saída efetiva — campos em camelCase conforme API Brudam
+    // 1) Registrar saida efetiva - campos camelCase conforme API Brudam
     const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
       method: 'POST',
       headers,
@@ -78,14 +75,14 @@ export default async function handler(req, res) {
 
     if (!rSaida.ok) {
       return res.status(rSaida.status).json({
-        error:  jSaida.message || jSaida.error || 'Erro ao registrar saída.',
+        error:  jSaida.message || jSaida.error || 'Erro ao registrar saida.',
         detail: jSaida
       });
     }
 
     const saidaStatus = { ok: true, data: jSaida };
 
-    // 2) Enviar foto como ocorrência/anexo
+    // 2) Enviar foto como ocorrencia/anexo
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method: 'POST',
       headers,
@@ -99,7 +96,7 @@ export default async function handler(req, res) {
           eventos: [{
             codigo: 1,
             data: dataSaidaBrudam,
-            obs: `Hodômetro saída — KM ${kmInicial}`
+            obs: `Hodometro saida - KM ${kmInicial}`
           }],
           anexos: [{
             arquivo: {
@@ -113,8 +110,9 @@ export default async function handler(req, res) {
     const jFoto = await rFoto.json();
 
     return res.status(200).json({
-      saida: saidaStatus,
-      foto:  jFoto
+      saida:     saidaStatus,
+      foto:      jFoto,
+      timestamp: dataSaidaBrudam
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });
