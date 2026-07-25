@@ -236,12 +236,12 @@
 </head>
 <body>
 
-  <header>
+<header>
   <h1>Registro de Ocorrências</h1>
-  <p>Porto Express · PTX Transporte · Pex Logística</p>
+  <p>Az Portoex · PTX Transporte · Pex Logística</p>
 </header>
 
-  <nav class="nav-menu">
+<nav class="nav-menu">
   <div class="nav-item" id="nav-manifesto" onclick="selectMenu('manifesto')">MANIFESTO</div>
   <div class="nav-item active" id="nav-minuta" onclick="selectMenu('minuta')">MINUTA</div>
 </nav>
@@ -271,7 +271,7 @@
         <div class="radio-option" onclick="selectBase(this,'porto')">
           <input type="radio" name="base" value="porto">
           <div class="radio-dot"></div>
-          <span class="radio-label">Porto Express</span>
+          <span class="radio-label">Az Portoex</span>
         </div>
         <div class="radio-option" onclick="selectBase(this,'ptx')">
           <input type="radio" name="base" value="ptx">
@@ -293,7 +293,7 @@
         <input type="number" id="minuta" placeholder="Ex: 291065" inputmode="numeric" pattern="[0-9]*">
       </div>
       <div id="err1" class="error-box"></div>
-      <button class="btn btn-primary" id="btn-buscar" onclick="buscarMinuta()">BUSCARMINUTA</button>
+      <button class="btn btn-primary" id="btn-buscar" onclick="buscarMinuta()">BUSCAR MINUTA</button>
     </div>
   </div>
 
@@ -445,7 +445,7 @@
 
       cnpjDest = ev.cnpj_destinatario || '';
 
-      const nomeBase = { porto: 'Porto Express', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
 
       let html = `
         <div class="info-row"><span class="info-key">Empresa</span><span class="info-val">${nomeBase}</span></div>
@@ -568,7 +568,7 @@
       if (!r.ok) throw new Error(j.error || j.message || 'Erro ao registrar.');
 
       const ocNome   = document.getElementById('ocorrencia').selectedOptions[0].text;
-      const nomeBase = { porto: 'Porto Express', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
 
       document.getElementById('success-detail').innerHTML = `
         <p><strong>Empresa:</strong> ${nomeBase}</p>
