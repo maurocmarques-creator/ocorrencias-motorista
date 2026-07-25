@@ -48,34 +48,31 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${token}`
     };
 
-    // 1) Registrar saída efetiva — tenta variações de payload até uma funcionar
+    // 1) Registrar saída efetiva
+    // Brudam limita 3 req/s — aguarda 450ms entre tentativas
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
     const authBody = { usuario: b.usuario, senha: b.senha };
+
+    // Tenta snake_case com auth (mais provável), depois sem auth, depois camelCase
     const payloads = [
-      // variação 1: snake_case com auth no body
       { auth: authBody, id_manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
-      // variação 2: snake_case sem auth
       { id_manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
-      // variação 3: manifesto (sem prefixo id_) + auth
-      { auth: authBody, manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
-      // variação 4: camelCase com auth
       { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida },
-      // variação 5: camelCase sem auth
-      { idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida },
     ];
 
     let rSaida, jSaida;
     const tentativas = [];
 
-    for (const payload of payloads) {
+    for (let i = 0; i < payloads.length; i++) {
+      if (i > 0) await sleep(450); // respeita rate limit de 3 req/s
       rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-        method: 'POST', headers, body: JSON.stringify(payload)
+        method: 'POST', headers, body: JSON.stringify(payloads[i])
       });
       jSaida = await rSaida.json().catch(() => ({}));
-      tentativas.push({ payload: Object.keys(payload), status: rSaida.status, msg: jSaida.message || jSaida.error });
+      tentativas.push({ keys: Object.keys(payloads[i]), status: rSaida.status, msg: jSaida.message || jSaida.error });
       if (rSaida.ok) break;
-      // Para se a mensagem NÃO for sobre dados inválidos (outro tipo de erro)
       const msg = (jSaida.message || jSaida.error || '').toLowerCase();
-      if (!msg.includes('dados') && !msg.includes('campo') && !msg.includes('obrigat')) break;
+      if (!msg.includes('dados') && !msg.includes('campo') && !msg.includes('obrigat') && !msg.includes('requisições')) break;
     }
 
     if (!rSaida.ok) return res.status(rSaida.status).json({
