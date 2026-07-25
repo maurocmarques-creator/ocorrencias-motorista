@@ -232,6 +232,29 @@
     .coming-soon-icon { font-size: 56px; margin-bottom: 16px; }
     .coming-soon-title { font-size: 18px; font-weight: bold; color: #1F3864; margin-bottom: 8px; }
     .coming-soon-sub { font-size: 14px; color: #888; }
+
+    .mstep { display: none; }
+    .mstep.active { display: block; }
+
+    .km-warn {
+      font-size: 12px;
+      color: #856404;
+      background: #fff3cd;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 6px;
+      display: none;
+    }
+    .tag-status {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 10px;
+      margin-left: 6px;
+    }
+    .tag-ok   { background: #d1fae5; color: #065f46; }
+    .tag-warn { background: #fef9c3; color: #713f12; }
   </style>
 </head>
 <body>
@@ -248,16 +271,131 @@
 
 <!-- ── Seção Manifesto ── -->
 <div id="section-manifesto" class="menu-section">
-  <div class="container">
+<div class="container">
+
+  <!-- ── MSTEP 1: Empresa + ID Manifesto ─────────────── -->
+  <div id="mstep1" class="mstep active">
     <div class="card">
-      <div class="coming-soon-card">
-        <div class="coming-soon-icon">🚚</div>
-        <div class="coming-soon-title">Manifesto</div>
-        <p class="coming-soon-sub">Em desenvolvimento.<br>Em breve disponível aqui.</p>
+      <h2>1. Selecione a Empresa</h2>
+      <div class="radio-group" id="mbase-group">
+        <div class="radio-option" onclick="selectMBase(this,'porto')">
+          <input type="radio" name="mbase" value="porto">
+          <div class="radio-dot"></div>
+          <span class="radio-label">Az Portoex</span>
+        </div>
+        <div class="radio-option" onclick="selectMBase(this,'ptx')">
+          <input type="radio" name="mbase" value="ptx">
+          <div class="radio-dot"></div>
+          <span class="radio-label">PTX Transporte</span>
+        </div>
+        <div class="radio-option" onclick="selectMBase(this,'pex')">
+          <input type="radio" name="mbase" value="pex">
+          <div class="radio-dot"></div>
+          <span class="radio-label">Pex Logística</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Número do Manifesto</h2>
+      <div class="field-group">
+        <label class="field-label">ID Manifesto</label>
+        <input type="number" id="m-id" placeholder="Ex: 1234" inputmode="numeric" pattern="[0-9]*">
+      </div>
+      <div id="merr1" class="error-box"></div>
+      <button class="btn btn-primary" id="mbtn-consultar" onclick="consultarManifesto()">CONSULTAR MANIFESTO</button>
+    </div>
+  </div>
+
+  <!-- ── MSTEP 2: Saída ───────────────────────────────── -->
+  <div id="mstep2" class="mstep">
+    <div class="card">
+      <h2>Dados do Manifesto</h2>
+      <div class="info-box" id="m-info"></div>
+      <button class="btn btn-secondary" onclick="mGo('mstep2','mstep1')" style="margin-top:0">← Voltar</button>
+    </div>
+
+    <div class="card">
+      <h2>Etapa 1 — Saída</h2>
+
+      <div class="field-group">
+        <label class="field-label">Data e Hora da Saída <span style="color:#c00">*</span></label>
+        <input type="datetime-local" id="m-data-saida">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">KM Inicial <span style="color:#c00">*</span></label>
+        <input type="number" id="m-km-inicial" placeholder="Ex: 45800" inputmode="numeric" pattern="[0-9]*">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">📷 Foto do Hodômetro — Saída <span style="color:#c00">*</span></label>
+        <div class="foto-area" onclick="document.getElementById('mfoto-saida-input').click()">
+          <input type="file" id="mfoto-saida-input" accept="image/*" capture="camera" onchange="onMFotoSaidaChange()">
+          <div class="foto-icon" id="mfoto-saida-icon">📷</div>
+          <div class="foto-txt" id="mfoto-saida-txt">Toque para fotografar o hodômetro</div>
+          <img id="mfoto-saida-preview" alt="Hodômetro saída" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
+          <div id="mfoto-saida-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
+        </div>
+      </div>
+
+      <div id="merr2" class="error-box"></div>
+      <button class="btn btn-primary" id="mbtn-saida" onclick="registrarSaida()">REGISTRAR SAÍDA</button>
+    </div>
+  </div>
+
+  <!-- ── MSTEP 3: Finalização ─────────────────────────── -->
+  <div id="mstep3" class="mstep">
+    <div class="card">
+      <h2>Dados do Manifesto</h2>
+      <div class="info-box" id="m-info2"></div>
+    </div>
+
+    <div class="card">
+      <h2>Etapa 2 — Finalização</h2>
+
+      <div class="field-group">
+        <label class="field-label">Data e Hora de Chegada <span style="color:#c00">*</span></label>
+        <input type="datetime-local" id="m-data-chegada">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">KM Final <span style="color:#c00">*</span></label>
+        <input type="number" id="m-km-final" placeholder="Ex: 46500" inputmode="numeric" pattern="[0-9]*" oninput="validarKmFinal()">
+        <div id="m-km-warn" class="km-warn">⚠️ KM Final não pode ser menor que o KM Inicial (<span id="m-km-ini-ref"></span> km).</div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">📷 Foto do Hodômetro — Chegada <span style="color:#c00">*</span></label>
+        <div class="foto-area" onclick="document.getElementById('mfoto-chegada-input').click()">
+          <input type="file" id="mfoto-chegada-input" accept="image/*" capture="camera" onchange="onMFotoChegadaChange()">
+          <div class="foto-icon" id="mfoto-chegada-icon">📷</div>
+          <div class="foto-txt" id="mfoto-chegada-txt">Toque para fotografar o hodômetro</div>
+          <img id="mfoto-chegada-preview" alt="Hodômetro chegada" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
+          <div id="mfoto-chegada-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
+        </div>
+      </div>
+
+      <div id="merr3" class="error-box"></div>
+      <button class="btn btn-primary" id="mbtn-finalizar" onclick="finalizarManifesto()">FINALIZAR MANIFESTO</button>
+    </div>
+  </div>
+
+  <!-- ── MSTEP 4: Sucesso ──────────────────────────────── -->
+  <div id="mstep4" class="mstep">
+    <div class="card">
+      <div class="success-card">
+        <div class="success-icon">✅</div>
+        <div class="success-title">Manifesto Finalizado!</div>
+        <p class="success-sub">Manifesto encerrado com sucesso no Brudam.</p>
+        <div class="success-detail" id="m-success-detail"></div>
+        <button class="btn btn-success" onclick="reiniciarManifesto()">NOVO MANIFESTO</button>
       </div>
     </div>
   </div>
+
 </div>
+</div><!-- /section-manifesto -->
 
 <!-- ── Seção Minuta ── -->
 <div id="section-minuta" class="menu-section active">
@@ -386,7 +524,7 @@
 </div><!-- /section-minuta -->
 
 <footer style="text-align:center;padding:14px 16px 24px;font-size:11px;color:#aaa;">
-  Última atualização: 24/07/2026 18:10
+  Última atualização: 24/07/2026 22:45
 </footer>
 
 <script>
@@ -565,66 +703,179 @@
       });
 
       const j = await r.json();
-      if (!r.ok) throw new Error(j.error || j.message || 'Erro ao registrar.');
+      if (!r.ok) throw new Error(j.error || j.message || 'Errl[��Y�\��\���N��ۜ��ӛ�YHH��[Y[���][[Y[��RY
+	���ܜ�[��XI�K��[X�Y�[ۜ��K�^�ۜ���YP�\�HH�ܝΈ	�^�ܝ�^	��	��[��ܝI�^�	�^���\�X�I�Vؘ\�T�[N���[Y[���][[Y[��RY
+	��X��\��Y]Z[	�K�[��\�SH����ۙϑ[\�\�N����ۙψ	ۛ�YP�\�_O������ۙϓZ[�]N����ۙψ	�Z[�]_O������ۙϓ��ܜ�ꛘ�XN����ۙψ	��ӛ�Y_O���	�]Q]�[������ۙϑ]K�ܘN����ۙψ	�]Q]�[�˜�X���[��M�K��\X�J	�	�	�	�_O���	��B�	ۛ�YT�X�X�Y܈����ۙϔ�X�X�Y܎����ۙψ	ۛ�YT�X�X�YܟO���	��B�	��ԙX�X�Y܈����ۙϑ��[Y[�Ώ���ۙψ	��ԙX�X�YܟO���	��B�	�؜�����ۙϓ؜Ώ���ۙψ	�؜�O���	��B����	��\��	��\��NH�]�
+JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	ԑQ�T��T���Ԕ�ⓐ�PI����\�X�YH�[�NB�B����8� 8� �Z[�X�X\�8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ�Z[�X�X\�
+H�\�T�[H�[�ۜ�\�H�[���Ѝ�H�[���ӛ�YHH�[��[Y[���][[Y[��RY
+	�Z[�]I�K��[YHH	����[Y[���][[Y[��RY
+	���ܜ�[��XI�K��[YHH	����[Y[���][[Y[��RY
+	�؜��K��[YHH	����[Y[���][[Y[��RY
+	�]KY[��Y�I�K��[YHH	����[Y[���][[Y[��RY
+	�ܘKY[��Y�I�K��[YHH	����[Y[���][[Y[��RY
+	���\�X�X�Y܉�K��[YHH	����[Y[���][[Y[��RY
+	ۛ�YK\�X�X�Y܉�K��[YHH	����[Y[���][[Y[��RY
+	�[��Y�K\�X�[ۉ�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�\��I�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�\����K��[K�\�^HH	ۛۙI��\�]���
+N��[Y[��]Y\�T�[X�ܐ[
+	˜�Y[�[�[ۉ�K��ܑXX�
+�O����\��\���[[ݙJ	��[X�Y	�JN��	��\��	��\I�NB���[��[ۈ��\�
+H���	��\��	��\I�N�B����8� 8� [\��8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ�����K�H��[Y[���][[Y[��RY
+���JK��\��\���[[ݙJ	�X�]�I�N��[Y[���][[Y[��RY
+�K��\��\��Y
+	�X�]�I�N�[��˜�ܛ������Z]�[܎�	��[��	�JNB��[��[ۈ���\��[\��H�[�^�۝[�H\���[��[K�\�^HH	؛�����B����8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d���PS�Q�T���8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d�]P�\�T�[H�[]SX[�Y�\��YH�[]SX[�Y�\��]HH�[]R�R[�X�X[H�[]Q����ZYP��H�[]Q����ZYS��YHH�[]Q����Y�YP��H�[]Q����Y�YS��YHH�[��[��[ۈ�[X�P�\�J[�\�JH��[Y[��]Y\�T�[X�ܐ[
+	��X�\�KYܛ�\��Y[�[�[ۉ�K��ܑXX�
+�O����\��\���[[ݙJ	��[X�Y	�JN[��\��\��Y
+	��[X�Y	�NP�\�T�[H�\�N�ۜ�\��H��[Y[���][[Y[��RY
+	�Y\��I�N\���^�۝[�H	���\����[K�\�^HH	ۛۙI�B���[��[ۈQ�����K�H��[Y[���][[Y[��RY
+���JK��\��\���[[ݙJ	�X�]�I�N��[Y[���][[Y[��RY
+�K��\��\��Y
+	�X�]�I�N�[��˜�ܛ������Z]�[܎�	��[��	�JNB���[��[ۈ�����[]][YJ
+H�ۜ����H�]�]J
+N�ۜ�YH�O���[���K�Y�\�
+�	�	�N�]\��	ۛ�˙�]�[YX\�
+_KI�Y
+��˙�][۝
 
-      const ocNome   = document.getElementById('ocorrencia').selectedOptions[0].text;
-      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
+J�J_KI�Y
+��˙�]]J
+J_U	�Y
+��˙�]�\��
+J_N��Y
+��˙�]Z[�]\�
+J_XB���[��[ۈ]][YS��[�\J�[
+H�����LKLMU���8������LKLMH������]\���[��[��\X�J	�	�	�	�H
+�	Ό	���[B��\�[���[��[ۈ�ۜ�[\�X[�Y�\��
+H�ۜ�\��H��[Y[���][[Y[��RY
+	�Y\��I�N\����[K�\�^HH	ۛۙI��Y�
+[P�\�T�[
+H�]\�����\��\��	��[X�[ۙHH[\�\�K��N�ۜ�YH��[Y[���][[Y[��RY
+	�KZY	�K��[YK��[J
+NY�
+ZY
+H�]\�����\��\��	�[��ܛYH�Q�X[�Y�\�ˉ�N��ۜ���H��[Y[���][[Y[��RY
+	�X��X�ۜ�[\��N���[��\�SH	��[��\��H��[��\�����[���ۜ�[[�ˋ������\�X�YH�YN��H�ۜ��H]�Z]�]�
+�\K�X[�Y�\��X�ۜ�[Oؘ\�OI�P�\�T�[I�YI�YX
+N�ۜ��H]�Z]����ۊ
+N�Y�
+\����Z��]JH����]�\��܊��\��܈��Y\��Y�H	�X[�Y�\������[��۝�Yˉ�N�SX[�Y�\��YHYSX[�Y�\��]HH��]N��ۜ�H��]N�ۜ���YP�\�HH�ܝΈ	�^�ܝ�^	��	��[��ܝI�^�	�^���\�X�I�V�P�\�T�[N�][H�]��\��H�[���\��ȏ��[��\��H�[���Z�^H��[\�\�O��[���[��\��H�[���]�[��ۛ�YP�\�_O��[���]���]��\��H�[���\��ȏ��[��\��H�[���Z�^H��X[�Y�\����[���[��\��H�[���]�[���YO��[���]���Y�
+�[�ܚ\�JH[
+�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H��[�ܚ\�O��[���[��\��H�[���]�[����[�ܚ\�_O��[���]��Y�
+�X�JH[
+�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H��X�O��[���[��\��H�[���]�[����X�_O��[���]��Y�
+�]�[��Y�\�OOH[�Y�[�Y
+H[
+�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H��[��Y�\���[���[��\��H�[���]�[����]�[��Y�\�O��[���]��Y�
+��]\��\�ܚX�[�H[
+�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H���]\���[���[��\��H�[���]�[�����]\��\�ܚX�[�O��[���]�����[Y[���][[Y[��RY
+	�KZ[����K�[��\�SH[��[Y[���][[Y[��RY
+	�KZ[��̉�K�[��\�SH[��[Y[���][[Y[��RY
+	�KY]K\�ZYI�K��[YHH�����[]][YJ
+NQ��	�\�\I�	�\�\��NH�]�
+JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	��Ӕ�ST�NPS�Q�T������\�X�YH�[�NB�B���[��[ۈۓQ����ZYP�[��J
+H�ۜ��[HH��[Y[���][[Y[��RY
+	�Y���\�ZYKZ[�]	�K��[\��NY�
+Y�[JH�]\��Q����ZYS��YHH�[K��[YN�ۜ��XY\�H�]��[T�XY\�
+N�XY\��ۛ�YHHO�Q����ZYP��HK�\��]��\�[��]
+	�	�V�WN�ۜ��]�H��[Y[���][[Y[��RY
+	�Y���\�ZYK\�]�Y]��N�]��ܘ�HK�\��]��\�[��]���[K�\�^HH	؛������[Y[���][[Y[��RY
+	�Y���\�ZYKZX�ۉ�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�Y���\�ZYK]	�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�Y���\�ZYKX�Y�I�K��[K�\�^HH	�[�[�KX�����N�XY\���XY\�]UT�
+�[JNB���[��[ۈۓQ����Y�YP�[��J
+H�ۜ��[HH��[Y[���][[Y[��RY
+	�Y���X�Y�YKZ[�]	�K��[\��NY�
+Y�[JH�]\��Q����Y�YS��YHH�[K��[YN�ۜ��XY\�H�]��[T�XY\�
+N�XY\��ۛ�YHHO�Q����Y�YP��HK�\��]��\�[��]
+	�	�V�WN�ۜ��]�H��[Y[���][[Y[��RY
+	�Y���X�Y�YK\�]�Y]��N�]��ܘ�HK�\��]��\�[��]���[K�\�^HH	؛������[Y[���][[Y[��RY
+	�Y���X�Y�YKZX�ۉ�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�Y���X�Y�YK]	�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�Y���X�Y�YKX�Y�I�K��[K�\�^HH	�[�[�KX�����N�XY\���XY\�]UT�
+�[JNB���[��[ۈ�[Y\��Q�[�[
 
-      document.getElementById('success-detail').innerHTML = `
-        <p><strong>Empresa:</strong> ${nomeBase}</p>
-        <p><strong>Minuta:</strong> ${minuta}</p>
-        <p><strong>Ocorrência:</strong> ${ocNome}</p>
-        ${dataEvento   ? `<p><strong>Data/Hora:</strong> ${dataEvento.substring(0,16).replace('T',' ')}</p>` : ''}
-        ${nomeRecebedor ? `<p><strong>Recebedor:</strong> ${nomeRecebedor}</p>` : ''}
-        ${docRecebedor  ? `<p><strong>Documento:</strong> ${docRecebedor}</p>` : ''}
-        ${obs ? `<p><strong>Obs:</strong> ${obs}</p>` : ''}
-      `;
-
-      go('step2','step3');
-    } catch(e) {
-      showErr(err, e.message);
-    } finally {
-      btn.innerHTML = 'REGISTRAR OCORRÊNCIA';
-      btn.disabled  = false;
-    }
-  }
-
-  // ── Reiniciar ────────────────────────────────────────
-  function reiniciar() {
-    baseSel = null; cnpjDest = null; fotoB64 = null; fotoNome = null;
-    document.getElementById('minuta').value        = '';
-    document.getElementById('ocorrencia').value     = '';
-    document.getElementById('obs').value            = '';
-    document.getElementById('data-entrega').value   = '';
-    document.getElementById('hora-entrega').value   = '';
-    document.getElementById('doc-recebedor').value  = '';
-    document.getElementById('nome-recebedor').value = '';
-    document.getElementById('entrega-section').style.display = 'none';
-    document.getElementById('err1').style.display = 'none';
-    document.getElementById('err2').style.display = 'none';
-    resetFoto();
-    document.querySelectorAll('.radio-option').forEach(r => r.classList.remove('selected'));
-    go('step3','step1');
-  }
-
-  function voltar() { go('step2','step1'); }
-
-  // ── Helpers ──────────────────────────────────────────
-  function go(from, to) {
-    document.getElementById(from).classList.remove('active');
-    document.getElementById(to).classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-  function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
-
-  // ── Menu principal ──────────────────────────────────────
-  function selectMenu(item) {
-    document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('section-' + item).classList.add('active');
-    document.getElementById('nav-' + item).classList.add('active');
-  }
-</script>
-
-</body>
-</html>
+H�ۜ��Q�H\��R[�
+��[Y[���][[Y[��RY
+	�KZ�KY�[�[	�K��[YJH�ۜ��\��H��[Y[���][[Y[��RY
+	�KZ�K]�\���N��[Y[���][[Y[��RY
+	�KZ�KZ[�K\�Y��K�^�۝[�HR�R[�X�X[�\����[K�\�^HH
+R�R[�X�X[	���Q��	���Q�R�R[�X�X[
+H�	؛�����	ۛۙI�B��\�[���[��[ۈ�Y�\��\��ZYJ
+H�ۜ�\��H��[Y[���][[Y[��RY
+	�Y\����N\����[K�\�^HH	ۛۙI���ۜ�]T�ZYT�]�H��[Y[���][[Y[��RY
+	�KY]K\�ZYI�K��[YN�ۜ��R[�HH��[Y[���][[Y[��RY
+	�KZ�KZ[�X�X[	�K��[YK��[J
+N�Y�
+Y]T�ZYT�]�H�]\�����\��\��	�[��ܛYHH]HHܘHH�p�YK��NY�
+Z�R[�JH�]\�����\��\��	�[��ܛYH��H[�X�X[��NY�
+[Q����ZYP��
+H�]\�����\��\��	�H�����0�Y]��H�p�YH0�H؜�Y�]0�ܚXK��N��ۜ���H��[Y[���][[Y[��RY
+	�X��\�ZYI�N���[��\�SH	��[��\��H��[��\�����[���Y�\��[���p�YK�������\�X�YH�YN��H�ۜ��H]�Z]�]�
+	��\K�X[�Y�\��\�ZYI�Y]��	���	��XY\�Έ�	��۝[�U\IΈ	�\X�][ۋڜ�ۉ�K���N���Ӌ���[��Y�J�\�N�P�\�T�[�YX[��\��R[�
+SX[�Y�\��Y
+K��R[�X�X[�\��R[�
+�R[�JK�]T�ZYN�]][YS��[�\J]T�ZYT�]�K���ӛ�YN�Q����ZYS��YH��Y]����ZYW��SX[�Y�\��YK�������Y�ΈQ����ZYP����Y[�N�SX[�Y�\��]O˘�Y[�H	�JB�JN�ۜ��H]�Z]����ۊ
+NY�
+\����H����]�\��܊��\��܈��Y\��Y�H	�\���[��Y�\��\��p�YK��N�R�R[�X�X[H\��R[�
+�R[�JN��[Y[���][[Y[��RY
+	�KY]KX�Y�YI�K��[YHH�����[]][YJ
+N��[Y[���][[Y[��RY
+	�KZ�KZ[�K\�Y��K�^�۝[�HR�R[�X�X[Q��	�\�\��	�\�\��NH�]�
+JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	ԑQ�T��T��p�QI����\�X�YH�[�NB�B��\�[���[��[ۈ�[�[^�\�X[�Y�\��
+H�ۜ�\��H��[Y[���][[Y[��RY
+	�Y\����N\����[K�\�^HH	ۛۙI���ۜ�]P�Y�YT�]�H��[Y[���][[Y[��RY
+	�KY]KX�Y�YI�K��[YN�ۜ��Q�[�H\��R[�
+��[Y[���][[Y[��RY
+	�KZ�KY�[�[	�K��[YJH�Y�
+Y]P�Y�YT�]�H�]\�����\��\��	�[��ܛYHH]HHܘHH�Y�YK��NY�
+Z�Q�[�H�]\�����\��\��	�[��ܛYH��H�[�[��NY�
+�Q�[�R�R[�X�X[
+H�]\�����\��\���H�[�[
+	��Q�[�JH�����H�\�Y[�܈]YH��H[�X�X[
+	�R�R[�X�X[JK��\�Y�\]YH��[܋�
+NY�
+[Q����Y�YP��
+H�]\�����\��\��	�H�����0�Y]��H�Y�YH0�H؜�Y�]0�ܚXK��N��ۜ���H��[Y[���][[Y[��RY
+	�X��Y�[�[^�\��N���[��\�SH	��[��\��H��[��\�����[���[�[^�[�ˋ������\�X�YH�YN��H�ۜ��H]�Z]�]�
+	��\K�X[�Y�\��Y�[�[^�\��Y]��	���	��XY\�Έ�	��۝[�U\IΈ	�\X�][ۋڜ�ۉ�K���N���Ӌ���[��Y�J�\�N�P�\�T�[�YX[��\��R[�
+SX[�Y�\��Y
+K��Q�[�[��Q�[��]P�Y�YN�]][YS��[�\J]P�Y�YT�]�K���ӛ�YN�Q����Y�YS��YH��Y]����Y�YW��SX[�Y�\��YK�������Y�ΈQ����Y�YP����Y[�N�SX[�Y�\��]O˘�Y[�H	�JB�JN�ۜ��H]�Z]����ۊ
+NY�
+\����H����]�\��܊��\��܈��Y\��Y�H	�\���[��[�[^�\�X[�Y�\�ˉ�N��ۜ���YP�\�HH�ܝΈ	�^�ܝ�^	��	��[��ܝI�^�	�^���\�X�I�V�P�\�T�[N��[Y[���][[Y[��RY
+	�K\�X��\��Y]Z[	�K�[��\�SH����ۙϑ[\�\�N����ۙψ	ۛ�YP�\�_O������ۙϓX[�Y�\�Ώ���ۙψ	�SX[�Y�\��YO������ۙϒ�H[�X�X[����ۙψ	�R�R[�X�X[H�O������ۙϒ�H�[�[����ۙψ	��Q�[�H�O������ۙϒ�H\��ܜ�Y�Ώ���ۙψ	��Q�[�HR�R[�X�X[H�O���Q��	�\�\��	�\�\
+	�NH�]�
+JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	ђS�SV�T�PS�Q�T������\�X�YH�[�NB�B���[��[ۈ�Z[�X�X\�X[�Y�\��
+HP�\�T�[H�[�SX[�Y�\��YH�[�SX[�Y�\��]HH�[R�R[�X�X[H�[Q����ZYP��H�[�Q����ZYS��YHH�[Q����Y�YP��H�[�Q����Y�YS��YHH�[��[Y[���][[Y[��RY
+	�KZY	�K��[YHH	����[Y[���][[Y[��RY
+	�KZ�KZ[�X�X[	�K��[YHH	����[Y[���][[Y[��RY
+	�KZ�KY�[�[	�K��[YHH	����[Y[���][[Y[��RY
+	�KY]K\�ZYI�K��[YHH	����[Y[���][[Y[��RY
+	�KY]KX�Y�YI�K��[YHH	����[Y[���][[Y[��RY
+	�KZ�K]�\���K��[K�\�^HH	ۛۙI���Y\��I�	�Y\����	�Y\����K��ܑXX�
+YO��ۜ�[H��[Y[���][[Y[��RY
+Y
+N[�^�۝[�H	���[��[K�\�^HH	ۛۙI�JN���\�]�����p�YB���[Y[���][[Y[��RY
+	�Y���\�ZYKZ[�]	�K��[YHH	����[Y[���][[Y[��RY
+	�Y���\�ZYK\�]�Y]��K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�Y���\�ZYKZX�ۉ�K��[K�\�^HH	؛������[Y[���][[Y[��RY
+	�Y���\�ZYK]	�K��[K�\�^HH	؛������[Y[���][[Y[��RY
+	�Y���\�ZYKX�Y�I�K��[K�\�^HH	ۛۙI����\�]�����Y�YB���[Y[���][[Y[��RY
+	�Y���X�Y�YKZ[�]	�K��[YHH	����[Y[���][[Y[��RY
+	�Y���X�Y�YK\�]�Y]��K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
+	�Y���X�Y�YKZX�ۉ�K��[K�\�^HH	؛������[Y[���][[Y[��RY
+	�Y���X�Y�YK]	�K��[K�\�^HH	؛������[Y[���][[Y[��RY
+	�Y���X�Y�YKX�Y�I�K��[K�\�^HH	ۛۙI����\�]�Y[��[Y[��]Y\�T�[X�ܐ[
+	��X�\�KYܛ�\��Y[�[�[ۉ�K��ܑXX�
+�O����\��\���[[ݙJ	��[X�Y	�JNQ��	�\�\
+	�	�\�\I�NB����8� 8� Y[�H�[��\[8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ�[X�Y[�J][JH��[Y[��]Y\�T�[X�ܐ[
+	˛Y[�K\�X�[ۉ�K��ܑXX�
+�O�˘�\��\���[[ݙJ	�X�]�I�JN��[Y[��]Y\�T�[X�ܐ[
+	˛�]�Z][I�K��ܑXX�
+�O����\��\���[[ݙJ	�X�]�I�JN��[Y[���][[Y[��RY
+	��X�[ۋI�
+�][JK��\��\��Y
+	�X�]�I�N��[Y[���][[Y[��RY
+	ۘ]�I�
+�][JK��\��\��Y
+	�X�]�I�NB���ܚ\���؛�O���[�
