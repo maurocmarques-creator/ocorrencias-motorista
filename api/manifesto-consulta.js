@@ -62,7 +62,7 @@ export default async function handler(req, res) {
         // Se retornou dados válidos, responde com sucesso
         if (r.ok && j) {
           // Normaliza: pode vir como j.data, j.manifesto, j.dados, ou direto
-          const data = j.data ?? j.manifesto ?? j.i'dados ?? (j.id || j.id_manifesto ? j : undefined);
+          const data = j.data ?? j.manifesto ?? j.dados ?? (j.id || j.id_manifesto ? j : undefined);
           if (data !== undefined) {
             return res.status(200).json({ data });
           }
