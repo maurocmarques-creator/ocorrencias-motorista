@@ -1,24 +1,34 @@
+import { createHash } from 'crypto';
+
 const BASES = {
   porto: { url: 'https://azportoex.brudam.com.br/api/v1', usuario: '80f260dcd0a7764a0e1b32e4c6595730', senha: '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63' },
   ptx:   { url: 'https://ptxtransporte.brudam.com.br/api/v1', usuario: 'b45831041f9926f61af06e982cd70e63', senha: '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537' },
   pex:   { url: 'https://pexlogistica.brudam.com.br/api/v1', usuario: '19657d11bf9e3384271a8e455631ee4e', senha: '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba' }
 };
 
-// Timestamp do servidor no formato Brudam: "DD/MM/YYYY HH:MM:SS" (19 chars)
+function sha256(str) {
+  return createHash('sha256').update(str).digest('hex');
+}
+
+function md5(str) {
+  return createHash('md5').update(str).digest('hex');
+}
+
+// Timestamp do servidor no formato Brudam: "DD/MM/YYYY HH:MM:SS"
 function nowBrudam() {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
   return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
-async function login(base) {
-  const r = await fetch(`${base.url}/acesso/auth/login`, {
+async function login(url, usuario, senha) {
+  const r = await fetch(`${url}/acesso/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ usuario: base.usuario, senha: base.senha })
+    body: JSON.stringify({ usuario, senha })
   });
   const j = await r.json();
-  if (!j.data?.access_key) throw new Error('Falha no login: ' + j.message);
+  if (!j.data?.access_key) throw new Error(j.message || j.error || 'Falha no login');
   return j.data.access_key;
 }
 
@@ -37,32 +47,64 @@ export default async function handler(req, res) {
   if (!brudamUsuario || !brudamSenha) return res.status(400).json({ error: 'Usuario e senha Brudam obrigatorios.' });
 
   try {
-    const token = await login(b);
+    const senhaSha256 = sha256(brudamSenha);
+    const usuarioMd5  = md5(brudamUsuario.trim().toUpperCase());
+
+    let personalToken = null;
+    let loginMethod   = '';
+    const loginAttempts = [
+      { u: brudamUsuario, s: senhaSha256,        label: 'plain-usuario+sha256-senha' },
+      { u: usuarioMd5,    s: senhaSha256,         label: 'md5-usuario+sha256-senha'   },
+      { u: brudamUsuario, s: brudamSenha,         label: 'plain-usuario+plain-senha'  },
+    ];
+
+    for (const attempt of loginAttempts) {
+      try {
+        personalToken = await login(b.url, attempt.u, attempt.s);
+        loginMethod   = attempt.label;
+        break;
+      } catch (_) {}
+    }
+
+    const systemToken = await login(b.url, b.usuario, b.senha);
+    const token       = personalToken || systemToken;
+
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-    // auth usa credenciais pessoais do operador (nao as credenciais de sistema)
-    const authBody = { usuario: brudamUsuario, senha: brudamSenha };
+    const authBody = personalToken
+      ? { usuario: loginAttempts.find(a => a.label === loginMethod).u,
+          senha:   loginAttempts.find(a => a.label === loginMethod).s }
+      : { usuario: b.usuario, senha: b.senha };
 
     const dataSaidaBrudam = nowBrudam();
+    const saidaPayload = { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida: dataSaidaBrudam };
 
-    // 1) Registrar saida efetiva
     const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida: dataSaidaBrudam })
+      body: JSON.stringify(saidaPayload)
     });
-    const jSaida = await rSaida.json().catch(() => ({}));
+
+    let jSaida = {};
+    const saidaText = await rSaida.text();
+    try { jSaida = JSON.parse(saidaText); } catch {}
 
     if (!rSaida.ok) {
-      return res.status(rSaida.status).json({ error: jSaida.message || jSaida.error || 'Erro ao registrar saida.', detail: jSaida });
+      return res.status(rSaida.status).json({
+        error:        jSaida.message || jSaida.error || 'Erro ao registrar saida.',
+        detail:       jSaida,
+        debug: {
+          loginMethod,
+          personalLoginOk: !!personalToken,
+          saidaStatus: rSaida.status,
+          saidaBody:   saidaText.slice(0, 500)
+        }
+      });
     }
 
-    const saidaStatus = { ok: true, data: jSaida };
-
-    // 2) Enviar foto como ocorrencia
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${systemToken}` },
       body: JSON.stringify({
         auth: { usuario: b.usuario, senha: b.senha },
         documentos: [{
@@ -75,9 +117,15 @@ export default async function handler(req, res) {
         }]
       })
     });
-    const jFoto = await rFoto.json();
+    const jFoto = await rFoto.json().catch(() => ({}));
 
-    return res.status(200).json({ saida: saidaStatus, foto: jFoto, timestamp: dataSaidaBrudam });
+    return res.status(200).json({
+      saida:      { ok: true, data: jSaida },
+      foto:       jFoto,
+      timestamp:  dataSaidaBrudam,
+      loginMethod
+    });
+
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
