@@ -16,14 +16,14 @@ const BASES = {
   }
 };
 
-// Converte "YYYY-MM-DDTHH:MM" (datetime-local) para "DD/MM/YYYY HH:MM:SS" (Brudam)
-function toBrudamDateTime(dt) {
-  if (!dt) return dt;
+// Converte "YYYY-MM-DDTHH:MM" para partes separadas no formato Brudam
+function parseDatetime(dt) {
+  if (!dt) return { date: '', time: '' };
   const clean = dt.replace('T', ' ');
-  const [datePart, timePart = '00:00'] = clean.split(' ');
+  const [datePart = '', timePart = '00:00'] = clean.split(' ');
   const [y, m, d] = datePart.split('-');
   const time = timePart.length === 5 ? timePart + ':00' : timePart;
-  return `${d}/${m}/${y} ${time}`;
+  return { date: `${d}/${m}/${y}`, time };
 }
 
 async function login(base) {
@@ -60,19 +60,22 @@ export default async function handler(req, res) {
 
     const authBody = { usuario: b.usuario, senha: b.senha };
 
-    // Converte data para formato Brudam: DD/MM/YYYY HH:MM:SS
-    const dataSaidaBrudam = toBrudamDateTime(dataSaida);
+    // Separa data e hora no formato Brudam: DD/MM/YYYY e HH:MM:SS
+    const { date: dataSaidaDate, time: dataSaidaTime } = parseDatetime(dataSaida);
 
     // 1) Registrar saída efetiva
+    const saidaPayload = {
+      auth:         authBody,
+      id_manifesto: Number(idMan),
+      km_inicial:   Number(kmInicial),
+      data_saida:   dataSaidaDate,
+      hora_saida:   dataSaidaTime
+    };
+
     const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        auth:         authBody,
-        id_manifesto: Number(idMan),
-        km_inicial:   Number(kmInicial),
-        data_saida:   dataSaidaBrudam
-      })
+      body: JSON.stringify(saidaPayload)
     });
     const jSaida = await rSaida.json().catch(() => ({}));
 
@@ -86,6 +89,7 @@ export default async function handler(req, res) {
     const saidaStatus = { ok: true, data: jSaida };
 
     // 2) Enviar foto como ocorrência/anexo
+    const dataOcorrencia = `${dataSaidaDate} ${dataSaidaTime}`;
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method: 'POST',
       headers,
@@ -98,7 +102,7 @@ export default async function handler(req, res) {
           manifesto: Number(idMan),
           eventos: [{
             codigo: 1,
-            data: dataSaidaBrudam,
+            data: dataOcorrencia,
             obs: `Hodômetro saída — KM ${kmInicial}`
           }],
           anexos: [{
