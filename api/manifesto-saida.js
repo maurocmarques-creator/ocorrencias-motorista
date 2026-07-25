@@ -48,38 +48,26 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${token}`
     };
 
-    // 1) Registrar saída efetiva
-    // Brudam limita 3 req/s — aguarda 450ms entre tentativas
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    // 1) Tenta registrar saída efetiva no Brudam (endpoint pode não existir em todas as bases)
     const authBody = { usuario: b.usuario, senha: b.senha };
+    let saidaStatus = null;
 
-    // Tenta snake_case com auth (mais provável), depois sem auth, depois camelCase
-    const payloads = [
-      { auth: authBody, id_manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
-      { id_manifesto: Number(idMan), km_inicial: Number(kmInicial), data_saida: dataSaida },
-      { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida },
-    ];
-
-    let rSaida, jSaida;
-    const tentativas = [];
-
-    for (let i = 0; i < payloads.length; i++) {
-      if (i > 0) await sleep(450); // respeita rate limit de 3 req/s
-      rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-        method: 'POST', headers, body: JSON.stringify(payloads[i])
+    try {
+      const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          auth:         authBody,
+          id_manifesto: Number(idMan),
+          km_inicial:   Number(kmInicial),
+          data_saida:   dataSaida
+        })
       });
-      jSaida = await rSaida.json().catch(() => ({}));
-      tentativas.push({ keys: Object.keys(payloads[i]), status: rSaida.status, msg: jSaida.message || jSaida.error });
-      if (rSaida.ok) break;
-      const msg = (jSaida.message || jSaida.error || '').toLowerCase();
-      if (!msg.includes('dados') && !msg.includes('campo') && !msg.includes('obrigat') && !msg.includes('requisições')) break;
+      const jSaida = await rSaida.json().catch(() => ({}));
+      saidaStatus = { ok: rSaida.ok, status: rSaida.status, msg: jSaida.message || jSaida.error, data: jSaida };
+    } catch (_) {
+      saidaStatus = { ok: false, msg: 'Endpoint indisponível' };
     }
-
-    if (!rSaida.ok) return res.status(rSaida.status).json({
-      error:      jSaida.message || jSaida.error || 'Erro ao registrar saída.',
-      detail:     jSaida,
-      tentativas
-    });
 
     // 2) Enviar foto como ocorrência/anexo
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
@@ -109,7 +97,7 @@ export default async function handler(req, res) {
     const jFoto = await rFoto.json();
 
     return res.status(200).json({
-      saida: jSaida,
+      saida: saidaStatus,
       foto:  jFoto
     });
   } catch (e) {
