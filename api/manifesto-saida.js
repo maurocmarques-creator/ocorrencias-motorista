@@ -49,29 +49,50 @@ export default async function handler(req, res) {
     };
 
     // 1) Registrar saída efetiva
-    const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
+    // Tenta snake_case (padrão Brudam) e camelCase como fallback
+    const payloadSaida = {
+      id_manifesto: Number(idMan),
+      km_inicial:   Number(kmInicial),
+      data_saida:   dataSaida
+    };
+
+    let rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
       method:  'POST',
       headers,
-      body: JSON.stringify({
-        idMan:       Number(idMan),
-        kmInicial:   Number(kmInicial),
-        dataSaida,
-        dataChegada: null
-      })
+      body: JSON.stringify(payloadSaida)
     });
-    const jSaida = await rSaida.json();
-    if (!rSaida.ok) return res.status(rSaida.status).json({ error: jSaida.message || 'Erro ao registrar saída.', detail: jSaida });
+    let jSaida = await rSaida.json();
 
-    // 2) Enviar foto de saída como ocorrência/anexo
+    // Se falhou, tenta camelCase sem campos nulos
+    if (!rSaida.ok && (jSaida.message || '').toLowerCase().includes('dados')) {
+      const payloadCamel = {
+        idMan:     Number(idMan),
+        kmInicial: Number(kmInicial),
+        dataSaida
+      };
+      rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
+        method:  'POST',
+        headers,
+        body: JSON.stringify(payloadCamel)
+      });
+      jSaida = await rSaida.json();
+    }
+
+    if (!rSaida.ok) return res.status(rSaida.status).json({
+      error:  jSaida.message || jSaida.error || 'Erro ao registrar saída.',
+      detail: jSaida
+    });
+
+    // 2) Enviar foto como ocorrência/anexo
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method:  'POST',
       headers,
       body: JSON.stringify({
         auth: { usuario: b.usuario, senha: b.senha },
         documentos: [{
-          cliente:   cliente || '',
-          tipo:      'MANIFESTO',
-          tipo_op:   'MANIFESTO',
+          cliente:  cliente || '',
+          tipo:     'MANIFESTO',
+          tipo_op:  'MANIFESTO',
           manifesto: Number(idMan),
           eventos: [{
             codigo: 1,
