@@ -387,7 +387,7 @@
       <div class="success-card">
         <div class="success-icon">✅</div>
         <div class="success-title">Manifesto Finalizado!</div>
-        <p class="success-sub">Manifesto encerrado com sucesso no Brudam.</p>
+        <p class="succest-sub">Manifesto encerrado com sucesso no Brudam.</p>
         <div class="success-detail" id="m-success-detail"></div>
         <button class="btn btn-success" onclick="reiniciarManifesto()">NOVO MANIFESTO</button>
       </div>
@@ -703,179 +703,335 @@
       });
 
       const j = await r.json();
-      if (!r.ok) throw new Error(j.error || j.message || 'Errl[��Y�\��\���N��ۜ��ӛ�YHH��[Y[���][[Y[��RY
-	���ܜ�[��XI�K��[X�Y�[ۜ��K�^�ۜ���YP�\�HH�ܝΈ	�^�ܝ�^	��	��[��ܝI�^�	�^���\�X�I�Vؘ\�T�[N���[Y[���][[Y[��RY
-	��X��\��Y]Z[	�K�[��\�SH����ۙϑ[\�\�N����ۙψ	ۛ�YP�\�_O������ۙϓZ[�]N����ۙψ	�Z[�]_O������ۙϓ��ܜ�ꛘ�XN����ۙψ	��ӛ�Y_O���	�]Q]�[������ۙϑ]K�ܘN����ۙψ	�]Q]�[�˜�X���[��M�K��\X�J	�	�	�	�_O���	��B�	ۛ�YT�X�X�Y܈����ۙϔ�X�X�Y܎����ۙψ	ۛ�YT�X�X�YܟO���	��B�	��ԙX�X�Y܈����ۙϑ��[Y[�Ώ���ۙψ	��ԙX�X�YܟO���	��B�	�؜�����ۙϓ؜Ώ���ۙψ	�؜�O���	��B����	��\��	��\��NH�]�
-JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	ԑQ�T��T���Ԕ�ⓐ�PI����\�X�YH�[�NB�B����8� 8� �Z[�X�X\�8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ�Z[�X�X\�
-H�\�T�[H�[�ۜ�\�H�[���Ѝ�H�[���ӛ�YHH�[��[Y[���][[Y[��RY
-	�Z[�]I�K��[YHH	����[Y[���][[Y[��RY
-	���ܜ�[��XI�K��[YHH	����[Y[���][[Y[��RY
-	�؜��K��[YHH	����[Y[���][[Y[��RY
-	�]KY[��Y�I�K��[YHH	����[Y[���][[Y[��RY
-	�ܘKY[��Y�I�K��[YHH	����[Y[���][[Y[��RY
-	���\�X�X�Y܉�K��[YHH	����[Y[���][[Y[��RY
-	ۛ�YK\�X�X�Y܉�K��[YHH	����[Y[���][[Y[��RY
-	�[��Y�K\�X�[ۉ�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�\��I�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�\����K��[K�\�^HH	ۛۙI��\�]���
-N��[Y[��]Y\�T�[X�ܐ[
-	˜�Y[�[�[ۉ�K��ܑXX�
-�O����\��\���[[ݙJ	��[X�Y	�JN��	��\��	��\I�NB���[��[ۈ��\�
-H���	��\��	��\I�N�B����8� 8� [\��8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ�����K�H��[Y[���][[Y[��RY
-���JK��\��\���[[ݙJ	�X�]�I�N��[Y[���][[Y[��RY
-�K��\��\��Y
-	�X�]�I�N�[��˜�ܛ������Z]�[܎�	��[��	�JNB��[��[ۈ���\��[\��H�[�^�۝[�H\���[��[K�\�^HH	؛�����B����8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d���PS�Q�T���8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d8�d�]P�\�T�[H�[]SX[�Y�\��YH�[]SX[�Y�\��]HH�[]R�R[�X�X[H�[]Q����ZYP��H�[]Q����ZYS��YHH�[]Q����Y�YP��H�[]Q����Y�YS��YHH�[��[��[ۈ�[X�P�\�J[�\�JH��[Y[��]Y\�T�[X�ܐ[
-	��X�\�KYܛ�\��Y[�[�[ۉ�K��ܑXX�
-�O����\��\���[[ݙJ	��[X�Y	�JN[��\��\��Y
-	��[X�Y	�NP�\�T�[H�\�N�ۜ�\��H��[Y[���][[Y[��RY
-	�Y\��I�N\���^�۝[�H	���\����[K�\�^HH	ۛۙI�B���[��[ۈQ�����K�H��[Y[���][[Y[��RY
-���JK��\��\���[[ݙJ	�X�]�I�N��[Y[���][[Y[��RY
-�K��\��\��Y
-	�X�]�I�N�[��˜�ܛ������Z]�[܎�	��[��	�JNB���[��[ۈ�����[]][YJ
-H�ۜ����H�]�]J
-N�ۜ�YH�O���[���K�Y�\�
-�	�	�N�]\��	ۛ�˙�]�[YX\�
-_KI�Y
-��˙�][۝
+      if (!r.ok) throw new Error(j.error || j.message || 'Erro ao registrar.');
 
-J�J_KI�Y
-��˙�]]J
-J_U	�Y
-��˙�]�\��
-J_N��Y
-��˙�]Z[�]\�
-J_XB���[��[ۈ]][YS��[�\J�[
-H�����LKLMU���8������LKLMH������]\���[��[��\X�J	�	�	�	�H
-�	Ό	���[B��\�[���[��[ۈ�ۜ�[\�X[�Y�\��
-H�ۜ�\��H��[Y[���][[Y[��RY
-	�Y\��I�N\����[K�\�^HH	ۛۙI��Y�
-[P�\�T�[
-H�]\�����\��\��	��[X�[ۙHH[\�\�K��N�ۜ�YH��[Y[���][[Y[��RY
-	�KZY	�K��[YK��[J
-NY�
-ZY
-H�]\�����\��\��	�[��ܛYH�Q�X[�Y�\�ˉ�N��ۜ���H��[Y[���][[Y[��RY
-	�X��X�ۜ�[\��N���[��\�SH	��[��\��H��[��\�����[���ۜ�[[�ˋ������\�X�YH�YN��H�ۜ��H]�Z]�]�
-�\K�X[�Y�\��X�ۜ�[Oؘ\�OI�P�\�T�[I�YI�YX
-N�ۜ��H]�Z]����ۊ
-N�Y�
-\����Z��]JH����]�\��܊��\��܈��Y\��Y�H	�X[�Y�\������[��۝�Yˉ�N�SX[�Y�\��YHYSX[�Y�\��]HH��]N��ۜ�H��]N�ۜ���YP�\�HH�ܝΈ	�^�ܝ�^	��	��[��ܝI�^�	�^���\�X�I�V�P�\�T�[N�][H�]��\��H�[���\��ȏ��[��\��H�[���Z�^H��[\�\�O��[���[��\��H�[���]�[��ۛ�YP�\�_O��[���]���]��\��H�[���\��ȏ��[��\��H�[���Z�^H��X[�Y�\����[���[��\��H�[���]�[���YO��[���]���Y�
-�[�ܚ\�JH[
-�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H��[�ܚ\�O��[���[��\��H�[���]�[����[�ܚ\�_O��[���]��Y�
-�X�JH[
-�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H��X�O��[���[��\��H�[���]�[����X�_O��[���]��Y�
-�]�[��Y�\�OOH[�Y�[�Y
-H[
-�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H��[��Y�\���[���[��\��H�[���]�[����]�[��Y�\�O��[���]��Y�
-��]\��\�ܚX�[�H[
-�H]��\��H�[���\��ȏ��[��\��H�[���Z�^H���]\���[���[��\��H�[���]�[�����]\��\�ܚX�[�O��[���]�����[Y[���][[Y[��RY
-	�KZ[����K�[��\�SH[��[Y[���][[Y[��RY
-	�KZ[��̉�K�[��\�SH[��[Y[���][[Y[��RY
-	�KY]K\�ZYI�K��[YHH�����[]][YJ
-NQ��	�\�\I�	�\�\��NH�]�
-JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	��Ӕ�ST�NPS�Q�T������\�X�YH�[�NB�B���[��[ۈۓQ����ZYP�[��J
-H�ۜ��[HH��[Y[���][[Y[��RY
-	�Y���\�ZYKZ[�]	�K��[\��NY�
-Y�[JH�]\��Q����ZYS��YHH�[K��[YN�ۜ��XY\�H�]��[T�XY\�
-N�XY\��ۛ�YHHO�Q����ZYP��HK�\��]��\�[��]
-	�	�V�WN�ۜ��]�H��[Y[���][[Y[��RY
-	�Y���\�ZYK\�]�Y]��N�]��ܘ�HK�\��]��\�[��]���[K�\�^HH	؛������[Y[���][[Y[��RY
-	�Y���\�ZYKZX�ۉ�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�Y���\�ZYK]	�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�Y���\�ZYKX�Y�I�K��[K�\�^HH	�[�[�KX�����N�XY\���XY\�]UT�
-�[JNB���[��[ۈۓQ����Y�YP�[��J
-H�ۜ��[HH��[Y[���][[Y[��RY
-	�Y���X�Y�YKZ[�]	�K��[\��NY�
-Y�[JH�]\��Q����Y�YS��YHH�[K��[YN�ۜ��XY\�H�]��[T�XY\�
-N�XY\��ۛ�YHHO�Q����Y�YP��HK�\��]��\�[��]
-	�	�V�WN�ۜ��]�H��[Y[���][[Y[��RY
-	�Y���X�Y�YK\�]�Y]��N�]��ܘ�HK�\��]��\�[��]���[K�\�^HH	؛������[Y[���][[Y[��RY
-	�Y���X�Y�YKZX�ۉ�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�Y���X�Y�YK]	�K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�Y���X�Y�YKX�Y�I�K��[K�\�^HH	�[�[�KX�����N�XY\���XY\�]UT�
-�[JNB���[��[ۈ�[Y\��Q�[�[
+      const ocNome   = document.getElementById('ocorrencia').selectedOptions[0].text;
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
 
-H�ۜ��Q�H\��R[�
-��[Y[���][[Y[��RY
-	�KZ�KY�[�[	�K��[YJH�ۜ��\��H��[Y[���][[Y[��RY
-	�KZ�K]�\���N��[Y[���][[Y[��RY
-	�KZ�KZ[�K\�Y��K�^�۝[�HR�R[�X�X[�\����[K�\�^HH
-R�R[�X�X[	���Q��	���Q�R�R[�X�X[
-H�	؛�����	ۛۙI�B��\�[���[��[ۈ�Y�\��\��ZYJ
-H�ۜ�\��H��[Y[���][[Y[��RY
-	�Y\����N\����[K�\�^HH	ۛۙI���ۜ�]T�ZYT�]�H��[Y[���][[Y[��RY
-	�KY]K\�ZYI�K��[YN�ۜ��R[�HH��[Y[���][[Y[��RY
-	�KZ�KZ[�X�X[	�K��[YK��[J
-N�Y�
-Y]T�ZYT�]�H�]\�����\��\��	�[��ܛYHH]HHܘHH�p�YK��NY�
-Z�R[�JH�]\�����\��\��	�[��ܛYH��H[�X�X[��NY�
-[Q����ZYP��
-H�]\�����\��\��	�H�����0�Y]��H�p�YH0�H؜�Y�]0�ܚXK��N��ۜ���H��[Y[���][[Y[��RY
-	�X��\�ZYI�N���[��\�SH	��[��\��H��[��\�����[���Y�\��[���p�YK�������\�X�YH�YN��H�ۜ��H]�Z]�]�
-	��\K�X[�Y�\��\�ZYI�Y]��	���	��XY\�Έ�	��۝[�U\IΈ	�\X�][ۋڜ�ۉ�K���N���Ӌ���[��Y�J�\�N�P�\�T�[�YX[��\��R[�
-SX[�Y�\��Y
-K��R[�X�X[�\��R[�
-�R[�JK�]T�ZYN�]][YS��[�\J]T�ZYT�]�K���ӛ�YN�Q����ZYS��YH��Y]����ZYW��SX[�Y�\��YK�������Y�ΈQ����ZYP����Y[�N�SX[�Y�\��]O˘�Y[�H	�JB�JN�ۜ��H]�Z]����ۊ
-NY�
-\����H����]�\��܊��\��܈��Y\��Y�H	�\���[��Y�\��\��p�YK��N�R�R[�X�X[H\��R[�
-�R[�JN��[Y[���][[Y[��RY
-	�KY]KX�Y�YI�K��[YHH�����[]][YJ
-N��[Y[���][[Y[��RY
-	�KZ�KZ[�K\�Y��K�^�۝[�HR�R[�X�X[Q��	�\�\��	�\�\��NH�]�
-JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	ԑQ�T��T��p�QI����\�X�YH�[�NB�B��\�[���[��[ۈ�[�[^�\�X[�Y�\��
-H�ۜ�\��H��[Y[���][[Y[��RY
-	�Y\����N\����[K�\�^HH	ۛۙI���ۜ�]P�Y�YT�]�H��[Y[���][[Y[��RY
-	�KY]KX�Y�YI�K��[YN�ۜ��Q�[�H\��R[�
-��[Y[���][[Y[��RY
-	�KZ�KY�[�[	�K��[YJH�Y�
-Y]P�Y�YT�]�H�]\�����\��\��	�[��ܛYHH]HHܘHH�Y�YK��NY�
-Z�Q�[�H�]\�����\��\��	�[��ܛYH��H�[�[��NY�
-�Q�[�R�R[�X�X[
-H�]\�����\��\���H�[�[
-	��Q�[�JH�����H�\�Y[�܈]YH��H[�X�X[
-	�R�R[�X�X[JK��\�Y�\]YH��[܋�
-NY�
-[Q����Y�YP��
-H�]\�����\��\��	�H�����0�Y]��H�Y�YH0�H؜�Y�]0�ܚXK��N��ۜ���H��[Y[���][[Y[��RY
-	�X��Y�[�[^�\��N���[��\�SH	��[��\��H��[��\�����[���[�[^�[�ˋ������\�X�YH�YN��H�ۜ��H]�Z]�]�
-	��\K�X[�Y�\��Y�[�[^�\��Y]��	���	��XY\�Έ�	��۝[�U\IΈ	�\X�][ۋڜ�ۉ�K���N���Ӌ���[��Y�J�\�N�P�\�T�[�YX[��\��R[�
-SX[�Y�\��Y
-K��Q�[�[��Q�[��]P�Y�YN�]][YS��[�\J]P�Y�YT�]�K���ӛ�YN�Q����Y�YS��YH��Y]����Y�YW��SX[�Y�\��YK�������Y�ΈQ����Y�YP����Y[�N�SX[�Y�\��]O˘�Y[�H	�JB�JN�ۜ��H]�Z]����ۊ
-NY�
-\����H����]�\��܊��\��܈��Y\��Y�H	�\���[��[�[^�\�X[�Y�\�ˉ�N��ۜ���YP�\�HH�ܝΈ	�^�ܝ�^	��	��[��ܝI�^�	�^���\�X�I�V�P�\�T�[N��[Y[���][[Y[��RY
-	�K\�X��\��Y]Z[	�K�[��\�SH����ۙϑ[\�\�N����ۙψ	ۛ�YP�\�_O������ۙϓX[�Y�\�Ώ���ۙψ	�SX[�Y�\��YO������ۙϒ�H[�X�X[����ۙψ	�R�R[�X�X[H�O������ۙϒ�H�[�[����ۙψ	��Q�[�H�O������ۙϒ�H\��ܜ�Y�Ώ���ۙψ	��Q�[�HR�R[�X�X[H�O���Q��	�\�\��	�\�\
-	�NH�]�
-JH���\��\��K�Y\��Y�JNH�[�[H���[��\�SH	ђS�SV�T�PS�Q�T������\�X�YH�[�NB�B���[��[ۈ�Z[�X�X\�X[�Y�\��
-HP�\�T�[H�[�SX[�Y�\��YH�[�SX[�Y�\��]HH�[R�R[�X�X[H�[Q����ZYP��H�[�Q����ZYS��YHH�[Q����Y�YP��H�[�Q����Y�YS��YHH�[��[Y[���][[Y[��RY
-	�KZY	�K��[YHH	����[Y[���][[Y[��RY
-	�KZ�KZ[�X�X[	�K��[YHH	����[Y[���][[Y[��RY
-	�KZ�KY�[�[	�K��[YHH	����[Y[���][[Y[��RY
-	�KY]K\�ZYI�K��[YHH	����[Y[���][[Y[��RY
-	�KY]KX�Y�YI�K��[YHH	����[Y[���][[Y[��RY
-	�KZ�K]�\���K��[K�\�^HH	ۛۙI���Y\��I�	�Y\����	�Y\����K��ܑXX�
-YO��ۜ�[H��[Y[���][[Y[��RY
-Y
-N[�^�۝[�H	���[��[K�\�^HH	ۛۙI�JN���\�]�����p�YB���[Y[���][[Y[��RY
-	�Y���\�ZYKZ[�]	�K��[YHH	����[Y[���][[Y[��RY
-	�Y���\�ZYK\�]�Y]��K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�Y���\�ZYKZX�ۉ�K��[K�\�^HH	؛������[Y[���][[Y[��RY
-	�Y���\�ZYK]	�K��[K�\�^HH	؛������[Y[���][[Y[��RY
-	�Y���\�ZYKX�Y�I�K��[K�\�^HH	ۛۙI����\�]�����Y�YB���[Y[���][[Y[��RY
-	�Y���X�Y�YKZ[�]	�K��[YHH	����[Y[���][[Y[��RY
-	�Y���X�Y�YK\�]�Y]��K��[K�\�^HH	ۛۙI���[Y[���][[Y[��RY
-	�Y���X�Y�YKZX�ۉ�K��[K�\�^HH	؛������[Y[���][[Y[��RY
-	�Y���X�Y�YK]	�K��[K�\�^HH	؛������[Y[���][[Y[��RY
-	�Y���X�Y�YKX�Y�I�K��[K�\�^HH	ۛۙI����\�]�Y[��[Y[��]Y\�T�[X�ܐ[
-	��X�\�KYܛ�\��Y[�[�[ۉ�K��ܑXX�
-�O����\��\���[[ݙJ	��[X�Y	�JNQ��	�\�\
-	�	�\�\I�NB����8� 8� Y[�H�[��\[8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ�[X�Y[�J][JH��[Y[��]Y\�T�[X�ܐ[
-	˛Y[�K\�X�[ۉ�K��ܑXX�
-�O�˘�\��\���[[ݙJ	�X�]�I�JN��[Y[��]Y\�T�[X�ܐ[
-	˛�]�Z][I�K��ܑXX�
-�O����\��\���[[ݙJ	�X�]�I�JN��[Y[���][[Y[��RY
-	��X�[ۋI�
-�][JK��\��\��Y
-	�X�]�I�N��[Y[���][[Y[��RY
-	ۘ]�I�
-�][JK��\��\��Y
-	�X�]�I�NB���ܚ\���؛�O���[�
+      document.getElementById('success-detail').innerHTML = `
+        <p><strong>Empresa:</strong> ${nomeBase}</p>
+        <p><strong>Minuta:</strong> ${minuta}</p>
+        <p><strong>Ocorrência:</strong> ${ocNome}</p>
+        ${dataEvento   ? `<p><strong>Data/Hora:</strong> ${dataEvento.substring(0,16).replace('T',' ')}</p>` : ''}
+        ${nomeRecebedor ? `<p><strong>Recebedor:</strong> ${nomeRecebedor}</p>` : ''}
+        ${docRecebedor  ? `<p><strong>Documento:</strong> ${docRecebedor}</p>` : ''}
+        ${obs ? `<p><strong>Obs:</strong> ${obs}</p>` : ''}
+      `;
+
+      go('step2','step3');
+    } catch(e) {
+      showErr(err, e.message);
+    } finally {
+      btn.innerHTML = 'REGISTRAR OCORRÊNCIA';
+      btn.disabled  = false;
+    }
+  }
+
+  // ── Reiniciar ────────────────────────────────────────
+  function reiniciar() {
+    baseSel = null; cnpjDest = null; fotoB64 = null; fotoNome = null;
+    document.getElementById('minuta').value        = '';
+    document.getElementById('ocorrencia').value     = '';
+    document.getElementById('obs').value            = '';
+    document.getElementById('data-entrega').value   = '';
+    document.getElementById('hora-entrega').value   = '';
+    document.getElementById('doc-recebedor').value  = '';
+    document.getElementById('nome-recebedor').value = '';
+    document.getElementById('entrega-section').style.display = 'none';
+    document.getElementById('err1').style.display = 'none';
+    document.getElementById('err2').style.display = 'none';
+    resetFoto();
+    document.querySelectorAll('.radio-option').forEach(r => r.classList.remove('selected'));
+    go('step3','step1');
+  }
+
+  function voltar() { go('step2','step1'); }
+
+  // ── Helpers ──────────────────────────────────────────
+  function go(from, to) {
+    document.getElementById(from).classList.remove('active');
+    document.getElementById(to).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function showErr(el, msg, isHtml) {
+    if (isHtml) el.innerHTML = msg; else el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  // ══════════════════════════════════════════════════════
+  // MANIFESTO
+  // ══════════════════════════════════════════════════════
+  let mBaseSel       = null;
+  let mManifestoId   = null;
+  let mManifestoData = null;
+  let mKmInicial     = null;
+  let mFotoSaidaB64  = null;
+  let mFotoSaidaNome = null;
+  let mFotoChegadaB64  = null;
+  let mFotoChegadaNome = null;
+
+  function selectMBase(el, base) {
+    document.querySelectorAll('#mbase-group .radio-option').forEach(r => r.classList.remove('selected'));
+    el.classList.add('selected');
+    mBaseSel = base;
+    const err = document.getElementById('merr1');
+    err.textContent = ''; err.style.display = 'none';
+  }
+
+  function mGo(from, to) {
+    document.getElementById(from).classList.remove('active');
+    document.getElementById(to).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function nowLocalDatetime() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
+  function datetimeLocalToApi(val) {
+    // "2024-01-15T08:30" → "2024-01-15 08:30:00"
+    return val ? val.replace('T',' ') + ':00' : null;
+  }
+
+  async function consultarManifesto() {
+    const err = document.getElementById('merr1');
+    err.style.display = 'none';
+
+    if (!mBaseSel) return showErr(err, 'Selecione a empresa.');
+    const id = document.getElementById('m-id').value.trim();
+    if (!id) return showErr(err, 'Informe o ID do manifesto.');
+
+    const btn = document.getElementById('mbtn-consultar');
+    btn.innerHTML = '<span class="spinner"></span>Consultando...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(`/api/manifesto-consulta?base=${mBaseSel}&id=${id}`);
+      const j = await r.json();
+
+      if (!r.ok || !j.data) throw new Error(j.error || j.message || 'Manifesto não encontrado.');
+
+      mManifestoId   = id;
+      mManifestoData = j.data;
+
+      const d = j.data;
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[mBaseSel];
+
+      let html = `
+        <div class="info-row"><span class="info-key">Empresa</span><span class="info-val">${nomeBase}</span></div>
+        <div class="info-row"><span class="info-key">Manifesto</span><span class="info-val">${id}</span></div>
+      `;
+      if (d.motorista)   html += `<div class="info-row"><span class="info-key">Motorista</span><span class="info-val">${d.motorista}</span></div>`;
+      if (d.placa)       html += `<div class="info-row"><span class="info-key">Placa</span><span class="info-val">${d.placa}</span></div>`;
+      if (d.qtd_entregas !== undefined) html += `<div class="info-row"><span class="info-key">Entregas</span><span class="info-val">${d.qtd_entregas}</span></div>`;
+      if (d.status_descricao) html += `<div class="info-row"><span class="info-key">Status</span><span class="info-val">${d.status_descricao}</span></div>`;
+
+      document.getElementById('m-info').innerHTML  = html;
+      document.getElementById('m-info2').innerHTML = html;
+      document.getElementById('m-data-saida').value = nowLocalDatetime();
+      mGo('mstep1','mstep2');
+    } catch(e) {
+      showErr(err, e.message);
+    } finally {
+      btn.innerHTML = 'CONSULTAR MANIFESTO';
+      btn.disabled = false;
+    }
+  }
+
+  function onMFotoSaidaChange() {
+    const file = document.getElementById('mfoto-saida-input').files[0];
+    if (!file) return;
+    mFotoSaidaNome = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      mFotoSaidaB64 = e.target.result.split(',')[1];
+      const prev = document.getElementById('mfoto-saida-preview');
+      prev.src = e.target.result; prev.style.display = 'block';
+      document.getElementById('mfoto-saida-icon').style.display = 'none';
+      document.getElementById('mfoto-saida-txt').style.display = 'none';
+      document.getElementById('mfoto-saida-badge').style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function onMFotoChegadaChange() {
+    const file = document.getElementById('mfoto-chegada-input').files[0];
+    if (!file) return;
+    mFotoChegadaNome = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      mFotoChegadaB64 = e.target.result.split(',')[1];
+      const prev = document.getElementById('mfoto-chegada-preview');
+      prev.src = e.target.result; prev.style.display = 'block';
+      document.getElementById('mfoto-chegada-icon').style.display = 'none';
+      document.getElementById('mfoto-chegada-txt').style.display = 'none';
+      document.getElementById('mfoto-chegada-badge').style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function validarKmFinal() {
+    const kmF = parseInt(document.getElementById('m-km-final').value) || 0;
+    const warn = document.getElementById('m-km-warn');
+    document.getElementById('m-km-ini-ref').textContent = mKmInicial;
+    warn.style.display = (mKmInicial && kmF > 0 && kmF < mKmInicial) ? 'block' : 'none';
+  }
+
+  async function registrarSaida() {
+    const err = document.getElementById('merr2');
+    err.style.display = 'none';
+
+    const dataSaidaRaw = document.getElementById('m-data-saida').value;
+    const kmIni = document.getElementById('m-km-inicial').value.trim();
+
+    if (!dataSaidaRaw)   return showErr(err, 'Informe a data e hora de saída.');
+    if (!kmIni)          return showErr(err, 'Informe o KM inicial.');
+    if (!mFotoSaidaB64)  return showErr(err, 'A foto do hodômetro de saída é obrigatória.');
+
+    const btn = document.getElementById('mbtn-saida');
+    btn.innerHTML = '<span class="spinner"></span>Registrando saída...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch('/api/manifesto-saida', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base:       mBaseSel,
+          idMan:      parseInt(mManifestoId),
+          kmInicial:  parseInt(kmIni),
+          dataSaida:  datetimeLocalToApi(dataSaidaRaw),
+          fotoNome:   mFotoSaidaNome || `hodometro_saida_${mManifestoId}.jpg`,
+          fotoDados:  mFotoSaidaB64,
+          cliente:    mManifestoData?.cliente || ''
+        })
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        let msg = j.error || j.message || 'Erro ao registrar saída efetiva.';
+        const det = j.detail?.message || (typeof j.detail === 'string' ? j.detail : '');
+        if (det) msg += '<br><small style="opacity:.8">' + det + '</small>';
+        showErr(err, msg, true);
+        return;
+      }
+
+      mKmInicial = parseInt(kmIni);
+      document.getElementById('m-data-chegada').value = nowLocalDatetime();
+      document.getElementById('m-km-ini-ref').textContent = mKmInicial;
+      mGo('mstep2','mstep3');
+    } catch(e) {
+      showErr(err, e.message);
+    } finally {
+      btn.innerHTML = 'REGISTRAR SAÍDA';
+      btn.disabled = false;
+    }
+  }
+
+  async function finalizarManifesto() {
+    const err = document.getElementById('merr3');
+    err.style.display = 'none';
+
+    const dataChegadaRaw = document.getElementById('m-data-chegada').value;
+    const kmFin = parseInt(document.getElementById('m-km-final').value) || 0;
+
+    if (!dataChegadaRaw)    return showErr(err, 'Informe a data e hora de chegada.');
+    if (!kmFin)             return showErr(err, 'Informe o KM final.');
+    if (kmFin < mKmInicial) return showErr(err, `KM Final (${kmFin}) não pode ser menor que o KM Inicial (${mKmInicial}). Verifique o valor.`);
+    if (!mFotoChegadaB64)   return showErr(err, 'A foto do hodômetro de chegada é obrigatória.');
+
+    const btn = document.getElementById('mbtn-finalizar');
+    btn.innerHTML = '<span class="spinner"></span>Finalizando...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch('/api/manifesto-finalizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base:         mBaseSel,
+          idMan:        parseInt(mManifestoId),
+          kmFinal:      kmFin,
+          dataChegada:  datetimeLocalToApi(dataChegadaRaw),
+          fotoNome:     mFotoChegadaNome || `hodometro_chegada_${mManifestoId}.jpg`,
+          fotoDados:    mFotoChegadaB64,
+          cliente:      mManifestoData?.cliente || ''
+        })
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        let msg = j.error || j.message || 'Erro ao finalizar manifesto.';
+        const pendentes = j.minutas_pendentes || [];
+        if (pendentes.length > 0) {
+          msg += '<br><br><strong>⚠️ Minutas sem ocorrência:</strong><br>' +
+                 pendentes.map(m => '&bull; Minuta ' + m).join('<br>') +
+                 '<br><small style="opacity:.8">Registre entrega ou pendência para cada minuta antes de finalizar.</small>';
+        } else {
+          const det = j.detail?.message || (typeof j.detail === 'string' ? j.detail : '');
+          if (det) msg += '<br><small style="opacity:.8">' + det + '</small>';
+        }
+        showErr(err, msg, true);
+        return;
+      }
+
+      const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[mBaseSel];
+      document.getElementById('m-success-detail').innerHTML = `
+        <p><strong>Empresa:</strong> ${nomeBase}</p>
+        <p><strong>Manifesto:</strong> ${mManifestoId}</p>
+        <p><strong>KM Inicial:</strong> ${mKmInicial} km</p>
+        <p><strong>KM Final:</strong> ${kmFin} km</p>
+        <p><strong>KM Percorridos:</strong> ${kmFin - mKmInicial} km</p>
+      `;
+      mGo('mstep3','mstep4');
+    } catch(e) {
+      showErr(err, e.message);
+    } finally {
+      btn.innerHTML = 'FINALIZAR MANIFESTO';
+      btn.disabled = false;
+    }
+  }
+
+  function reiniciarManifesto() {
+    mBaseSel = null; mManifestoId = null; mManifestoData = null;
+    mKmInicial = null;
+    mFotoSaidaB64 = null; mFotoSaidaNome = null;
+    mFotoChegadaB64 = null; mFotoChegadaNome = null;
+    document.getElementById('m-id').value = '';
+    document.getElementById('m-km-inicial').value = '';
+    document.getElementById('m-km-final').value = '';
+    document.getElementById('m-data-saida').value = '';
+    document.getElementById('m-data-chegada').value = '';
+    document.getElementById('m-km-warn').style.display = 'none';
+    ['merr1','merr2','merr3'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = ''; el.style.display = 'none';
+    });
+    // Reset fotos saída
+    document.getElementById('mfoto-saida-input').value = '';
+    document.getElementById('mfoto-saida-preview').style.display = 'none';
+    document.getElementById('mfoto-saida-icon').style.display = 'block';
+    document.getElementById('mfoto-saida-txt').style.display = 'block';
+    document.getElementById('mfoto-saida-badge').style.display = 'none';
+    // Reset fotos chegada
+    document.getElementById('mfoto-chegada-input').value = '';
+    document.getElementById('mfoto-chegada-preview').style.display = 'none';
+    document.getElementById('mfoto-chegada-icon').style.display = 'block';
+    document.getElementById('mfoto-chegada-txt').style.display = 'block';
+    document.getElementById('mfoto-chegada-badge').style.display = 'none';
+    // Reset radio
+    document.querySelectorAll('#mbase-group .radio-option').forEach(r => r.classList.remove('selected'));
+    mGo('mstep4','mstep1');
+  }
+
+  // ── Menu principal ──────────────────────────────────────
+  function selectMenu(item) {
+    document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('section-' + item).classList.add('active');
+    document.getElementById('nav-' + item).classList.add('active');
+  }
+</script>
+
+</body>
+</html>
