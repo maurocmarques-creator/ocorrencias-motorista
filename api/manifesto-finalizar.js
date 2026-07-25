@@ -48,6 +48,34 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${token}`
     };
 
+    // 0) Pre-check: verificar minutas sem ocorrência no manifesto
+    try {
+      const rMan = await fetch(`${b.url}/operacional/consulta/manifesto/${idMan}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (rMan.ok) {
+        const jMan = await rMan.json();
+        const d = jMan?.data || {};
+        // Tenta vários nomes possíveis para a lista de documentos
+        const docs = d.documentos || d.notas || d.notas_fiscais || d.ctes || d.romaneios || [];
+        if (Array.isArray(docs) && docs.length > 0) {
+          const semOcorrencia = docs.filter(doc => {
+            const ev = doc.eventos || doc.historico || doc.ocorrencias || doc.tracking || [];
+            return Array.isArray(ev) && ev.length === 0;
+          });
+          if (semOcorrencia.length > 0) {
+            const nums = semOcorrencia
+              .map(doc => doc.minuta || doc.documento || doc.numero || doc.cte || doc.id)
+              .filter(Boolean);
+            return res.status(422).json({
+              error: `${semOcorrencia.length} minuta(s) sem ocorrência de entrega ou pendência. Registre uma ocorrência antes de finalizar.`,
+              minutas_pendentes: nums
+            });
+          }
+        }
+      }
+    } catch (_) { /* se o pre-check falhar, prosseguir — o Brudam retornará erro próprio */ }
+
     // 1) Enviar foto de chegada como ocorrência/anexo (antes de finalizar)
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method:  'POST',
@@ -55,9 +83,9 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         auth: { usuario: b.usuario, senha: b.senha },
         documentos: [{
-          cliente:   cliente || '',
-          tipo:      'MANIFESTO',
-          tipo_op:   'MANIFESTO',
+          cliente:  cliente || '',
+          tipo:     'MANIFESTO',
+          tipo_op:  'MANIFESTO',
           manifesto: Number(idMan),
           eventos: [{
             codigo: 1,
@@ -86,7 +114,11 @@ export default async function handler(req, res) {
       })
     });
     const jFin = await rFin.json();
-    if (!rFin.ok) return res.status(rFin.status).json({ error: jFin.message || 'Erro ao finalizar manifesto.', detail: jFin });
+    if (!rFin.ok) return res.status(rFin.status).json({
+      error: jFin.message || jFin.error || 'Erro ao finalizar manifesto.',
+      minutas_pendentes: jFin.data?.documentos_pendentes || jFin.data?.minutas || jFin.data?.pendentes || [],
+      detail: jFin
+    });
 
     return res.status(200).json({
       finalizar: jFin,
