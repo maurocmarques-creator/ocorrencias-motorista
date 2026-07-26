@@ -59,14 +59,20 @@ export default async function handler(req, res) {
 
   try {
     const senhaSha256 = sha256(brudamSenha);
+    const senhaMd5    = md5(brudamSenha);
     const usuarioMd5  = md5(brudamUsuario.trim().toUpperCase());
+    const usuarioLow  = brudamUsuario.trim().toLowerCase();
 
     let personalToken = null;
     let loginMethod   = '';
+    const loginErrors = [];
     const loginAttempts = [
-      { u: brudamUsuario, s: senhaSha256,        label: 'plain-usuario+sha256-senha' },
-      { u: usuarioMd5,    s: senhaSha256,         label: 'md5-usuario+sha256-senha'   },
-      { u: brudamUsuario, s: brudamSenha,         label: 'plain-usuario+plain-senha'  },
+      { u: brudamUsuario, s: senhaMd5,    label: 'plain-usuario+md5-senha'    },
+      { u: usuarioLow,    s: senhaMd5,    label: 'lower-usuario+md5-senha'    },
+      { u: brudamUsuario, s: senhaSha256, label: 'plain-usuario+sha256-senha' },
+      { u: usuarioMd5,    s: senhaSha256, label: 'md5-usuario+sha256-senha'   },
+      { u: usuarioMd5,    s: senhaMd5,    label: 'md5-usuario+md5-senha'      },
+      { u: brudamUsuario, s: brudamSenha, label: 'plain-usuario+plain-senha'  },
     ];
 
     for (const attempt of loginAttempts) {
@@ -74,11 +80,13 @@ export default async function handler(req, res) {
         personalToken = await login(b.url, attempt.u, attempt.s);
         loginMethod   = attempt.label;
         break;
-      } catch (_) {
-        await sleep(400);
+      } catch (e) {
+        loginErrors.push(`${attempt.label}: ${e.message}`);
+        await sleep(400); // respeita limite de 3 req/s do Brudam
       }
     }
 
+    // Se login pessoal falhou, usa token do sistema mas reporta aviso
     await sleep(400);
     const systemToken = await login(b.url, b.usuario, b.senha);
     const token       = personalToken || systemToken;
@@ -90,7 +98,6 @@ export default async function handler(req, res) {
           senha:   loginAttempts.find(a => a.label === loginMethod).s }
       : { usuario: b.usuario, senha: b.senha };
 
-    // Usa a hora enviada pelo form (jÃ¡ em horÃ¡rio local do motorista); fallback = agora em BrasÃ­lia
     const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
 
     const saidaPayload = { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida: dataSaidaBrudam };
@@ -112,6 +119,7 @@ export default async function handler(req, res) {
         debug: {
           loginMethod,
           personalLoginOk: !!personalToken,
+          loginErrors,
           saidaStatus: rSaida.status,
           saidaBody:   saidaText.slice(0, 500),
           dataSaidaEnviada: dataSaidaBrudam
