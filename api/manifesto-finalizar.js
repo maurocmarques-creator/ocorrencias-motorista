@@ -39,7 +39,7 @@ async function login(base) {
   return j.data.access_key;
 }
 
-// Obtém sessão PHP do Brudam web (para salvar no ANEXO do manifesto)
+// Obtém sessão web do Brudam (token uidbrd) para salvar no ANEXO do manifesto
 async function getWebSession(base) {
   if (!base.webUser || !base.webPass) return null;
   try {
@@ -49,29 +49,21 @@ async function getWebSession(base) {
     const tokenMatch = pageHtml.match(/name="token"[^>]*value="([^"]+)"/);
     const csrfToken = tokenMatch?.[1];
     if (!csrfToken) return null;
-    const setCookie = pageResp.headers.get('set-cookie') || '';
-    const preSession = setCookie.match(/PHPSESSID=([^;]+)/)?.[1] || '';
 
-    // 2) Fazer login com credenciais web
+    // 2) Fazer login — retorna uidbrd em data.udata.uidbrd
     const loginResp = await fetch(`${base.web}/brd/sys/login/tms`, {
       method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(preSession ? { 'Cookie': `PHPSESSID=${preSession}` } : {})
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: base.webUser, password: base.webPass, token: csrfToken })
     });
     const loginData = await loginResp.json().catch(() => ({}));
     if (!loginData.status) return null;
-
-    const loginCookie = loginResp.headers.get('set-cookie') || '';
-    const session = loginCookie.match(/PHPSESSID=([^;]+)/)?.[1] || preSession;
-    return session || null;
+    return loginData.data?.udata?.uidbrd || null;
   } catch (_) { return null; }
 }
 
 // Salva foto no ANEXO do manifesto via PHP (2 etapas: S3 + gravaAnexo.php)
-async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoNome) {
+async function uploadAnexo(base, bearerToken, uidbrd, idMan, fotoDados, fotoNome) {
   // Etapa 1: Upload para S3 via endpoint autenticado por Bearer
   const s3Resp = await fetch(`${base.web}/brd/res/attachment/create`, {
     method:  'POST',
@@ -94,14 +86,14 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
   const s3Url = s3Data.data?.[0];
   if (!s3Url) throw new Error('URL S3 não retornada');
 
-  // Etapa 2: Associar arquivo ao manifesto via gravaAnexo.php (sessão PHP)
+  // Etapa 2: Associar arquivo ao manifesto via gravaAnexo.php (cookie uidbrd)
   const boundary = `----Boundary${Date.now()}`;
   const body = `--${boundary}\r\nContent-Disposition: form-data; name="anexo"\r\n\r\n${s3Url}\r\n--${boundary}\r\nContent-Disposition: form-data; name="manifesto"\r\n\r\n${idMan}\r\n--${boundary}--`;
   const attachResp = await fetch(`${base.web}/operacional/ajax/gravaAnexo.php`, {
     method:  'POST',
     headers: {
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
-      'Cookie':       `PHPSESSID=${phpsessid}`
+      'Cookie':       `uidbrd=${uidbrd}`
     },
     body
   });
@@ -159,12 +151,12 @@ export default async function handler(req, res) {
       }
     } catch (_) { /* prosseguir se pre-check falhar */ }
 
-    // 1) Tentar salvar foto no ANEXO via sessão PHP
+    // 1) Tentar salvar foto no ANEXO via uidbrd
     let jAnexo = null;
-    const phpsessid = await getWebSession(b);
-    if (phpsessid) {
+    const uidbrd = await getWebSession(b);
+    if (uidbrd) {
       try {
-        jAnexo = await uploadAnexo(b, token, phpsessid, idMan, fotoDados, fotoNomeReal);
+        jAnexo = await uploadAnexo(b, token, uidbrd, idMan, fotoDados, fotoNomeReal);
       } catch (e) {
         jAnexo = { error: e.message };
       }
