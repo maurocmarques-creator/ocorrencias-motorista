@@ -390,7 +390,7 @@
     </div>
   </div>
 
-  <!-- ── MSTEP 4: Sucesso ──────────────────────────────── -->
+  <!-- ── MSTEP 4: Sucesso ────────────────────────────── -->
   <div id="mstep4" class="mstep">
     <div class="card">
       <div class="success-card">
@@ -444,7 +444,7 @@
     </div>
   </div>
 
-  <!-- ── STEP 2: Ocorrência ──────────────────────────── -->
+  <!-- ── STEP 2: Ocorrência ────────────────────────────── -->
   <div id="step2" class="step">
     <div class="card">
       <h2>Dados da Minuta</h2>
@@ -470,7 +470,7 @@
           <option value="1">1 · ENTREGA REALIZADA</option>
           <option value="667">667 · FALTA DE MERCADORIA (PARCIAL)</option>
           <option value="135">135 · MATERIAL RECUSADO PELO CLIENTE</option>
-          <option value="9">9 · MERCADORIA EM DETACORDO COM PEDIDO</option>
+          <option value="9">9 · MERCADORIA EM DESACORDO COM PEDIDO</option>
           <option value="670">670 · MERCADORIA NAO FOI CARREGADA</option>
           <option value="512">512 · RECUSADA POR FALTA DE AGENDAMENTO</option>
         </select>
@@ -516,7 +516,7 @@
     </div>
   </div>
 
-  <!-- ── STEP 3: Sucesso ─────────────────────────────── -->
+  <!-- ── STEP 3: Sucesso ───────────────────────────────── -->
   <div id="step3" class="step">
     <div class="card">
       <div class="success-card">
@@ -552,7 +552,7 @@
     if (err) { err.textContent = ''; err.style.display = 'none'; }
   }
 
-  // ── Buscar minuta ────────────────────────────────────
+  // ── Buscar minuta ──────────────────────────────────────
   async function buscarMinuta() {
     const err = document.getElementById('err1');
     err.style.display = 'none';
@@ -736,7 +736,7 @@
     }
   }
 
-  // ── Reiniciar ────────────────────────────────────────
+  // ── Reiniciar ──────────────────────────────────────────
   function reiniciar() {
     baseSel = null; cnpjDest = null; fotoB64 = null; fotoNome = null;
     document.getElementById('minuta').value        = '';
@@ -881,16 +881,25 @@
       document.getElementById('m-info').innerHTML  = html;
       document.getElementById('m-info2').innerHTML = html;
 
-      // Detecta se a saída já foi registrada — Brudam pode usar variações de nome de campo
-      const kmSaida   = d.km_inicial || d.hodometro_saida || d.km_saida || d.hodometro_inicial || d.km_ini || null;
+      // Detecta se a saída já foi registrada
+      // Brudam pode retornar KM ou indicar via status "SAIDA EFETIVA / EM ROTA"
+      const kmSaida    = d.km_inicial || d.hodometro_saida || d.km_saida || d.hodometro_inicial || d.km_ini || null;
       const dtSaidaRaw = d.data_saida || d.saida || d.dt_saida || d.data_ini || null;
-      const saidaJaRegistrada = kmSaida && parseInt(kmSaida) > 0;
+      const statusUp   = (statusTxt || '').toUpperCase();
+      const saidaJaRegistrada = (kmSaida && parseInt(kmSaida) > 0) ||
+        statusUp.includes('SAIDA EFETIVA') || statusUp.includes('SAÍDA EFETIVA') ||
+        statusUp.includes('EM ROTA') || statusUp.includes('TRANSITO') || statusUp.includes('TRÂNSITO');
 
       if (saidaJaRegistrada) {
         // Saída já registrada — pula direto para o formulário de finalização
-        mKmInicial = parseInt(kmSaida);
-        document.getElementById('m-km-ini-ref').textContent = mKmInicial;
-        document.getElementById('m-saida-km-txt').textContent = mKmInicial.toLocaleString('pt-BR') + ' km';
+        if (kmSaida && parseInt(kmSaida) > 0) {
+          mKmInicial = parseInt(kmSaida);
+          document.getElementById('m-km-ini-ref').textContent = mKmInicial;
+          document.getElementById('m-saida-km-txt').textContent = mKmInicial.toLocaleString('pt-BR') + ' km';
+        } else {
+          // KM não disponível na consulta — mostra status como referência
+          document.getElementById('m-saida-km-txt').textContent = statusTxt;
+        }
         if (dtSaidaRaw) {
           try {
             const dtObj = new Date(dtSaidaRaw.replace(' ', 'T'));
@@ -1127,7 +1136,7 @@
     mGo('mstep4','mstep1');
   }
 
-  // ── Menu principal ──────────────────────────────────────
+  // ── Menu principal ─────────────────────────────────────
   function selectMenu(item) {
     document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1135,7 +1144,7 @@
     document.getElementById('nav-' + item).classList.add('active');
   }
 
-  // ── Rodapé com data/hora atual ───────────────────────────
+  // ── Rodapé com data/hora atual ───────────────────────
   (function() {
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
