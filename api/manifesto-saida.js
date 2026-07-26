@@ -136,10 +136,9 @@ export default async function handler(req, res) {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        auth:         { usuario: b.usuario, senha: b.senha },
-        id_manifesto: Number(idMan),
-        km_inicial:   Number(kmInicial),
-        data_saida:   dataSaida
+        idMan:      Number(idMan),
+        kmInicial:  Number(kmInicial),
+        dataSaida:  dataSaida
       })
     });
     const jSaida = await rSaida.json().catch(() => ({}));
