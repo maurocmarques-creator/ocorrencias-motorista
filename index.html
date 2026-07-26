@@ -963,6 +963,9 @@
         let msg = j.error || j.message || 'Erro ao registrar saída efetiva.';
         const det = j.detail?.message || (typeof j.detail === 'string' ? j.detail : '');
         if (det) msg += '<br><small style="opacity:.8">' + det + '</small>';
+        if (j.prevSaidaErro) msg += '<br><small style="opacity:.7">PrevisãoSaída: ' + j.prevSaidaErro + '</small>';
+        if (j.prevSaidaAtualizada === false) msg += '<br><small style="opacity:.7">(previsão não atualizada)</small>';
+        if (j.baseUsada) msg += '<br><small style="opacity:.6">Base: ' + j.baseUsada + ' | Data: ' + (j.dataSaidaEnviada||'') + '</small>';
         showErr(err, msg, true);
         return;
       }
