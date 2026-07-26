@@ -40,11 +40,12 @@ async function login(base) {
 }
 
 async function getWebSession(base) {
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
   console.error('[WS] webUser presente:', !!base.webUser, '| webPass presente:', !!base.webPass);
   if (!base.webUser || !base.webPass)
     return { ok: false, reason: 'env-vars-missing' };
   try {
-    const pageResp = await fetch(`${base.web}/`, { redirect: 'follow' });
+    const pageResp = await fetch(`${base.web}/`, { redirect: 'follow', headers: { 'User-Agent': UA } });
     const pageCookies = pageResp.headers.get('set-cookie') || '';
     const pageHtml = await pageResp.text();
     const tokenMatch = pageHtml.match(/name="token"[^>]*value="([^"]+)"/);
@@ -94,7 +95,7 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
   console.error('[ANEXO] S3 status:', s3Data.status, '| msg:', s3Data.message);
   if (!s3Data.status) throw new Error('Upload S3 falhou: ' + s3Data.message);
   const s3Url = s3Data.data?.[0];
-  if (!s3Url) throw new Error('URL S3 não retornada');
+  if (!s3Url) throw new Error('URL S3 nÃ£o retornada');
 
   const boundary = `----Boundary${Date.now()}`;
   const body = `--${boundary}\r\nContent-Disposition: form-data; name="anexo"\r\n\r\n${s3Url}\r\n--${boundary}\r\nContent-Disposition: form-data; name="manifesto"\r\n\r\n${idMan}\r\n--${boundary}--`;
@@ -115,16 +116,16 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'MÃ©todo nÃ£o permitido.' });
 
   const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente } = req.body || {};
 
   const b = BASES[base];
-  if (!b)         return res.status(400).json({ error: 'Base inválida.' });
-  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatório.' });
-  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatório.' });
-  if (!dataSaida) return res.status(400).json({ error: 'dataSaida obrigatório.' });
-  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
+  if (!b)         return res.status(400).json({ error: 'Base invÃ¡lida.' });
+  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatÃ³rio.' });
+  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatÃ³rio.' });
+  if (!dataSaida) return res.status(400).json({ error: 'dataSaida obrigatÃ³rio.' });
+  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodÃ´metro obrigatÃ³ria.' });
 
   try {
     const token = await login(b);
@@ -145,7 +146,7 @@ export default async function handler(req, res) {
     }
     if (!rSaida.ok) {
       return res.status(rSaida.status).json({
-        error:  jSaida?.data?.message || jSaida?.message || jSaida?.error || 'Erro ao registrar saída.',
+        error:  jSaida?.data?.message || jSaida?.message || jSaida?.error || 'Erro ao registrar saÃ­da.',
         detail: jSaida
       });
     }
@@ -154,7 +155,7 @@ export default async function handler(req, res) {
     const sessionResult = await getWebSession(b);
     console.error('[SAIDA] sessionResult:', JSON.stringify(sessionResult).substring(0, 120));
     if (!sessionResult.ok) {
-      jAnexo = { error: `Sessão web não obtida: ${sessionResult.reason}`, detail: sessionResult.message };
+      jAnexo = { error: `SessÃ£o web nÃ£o obtida: ${sessionResult.reason}`, detail: sessionResult.message };
     } else {
       try {
         jAnexo = await uploadAnexo(b, token, sessionResult.uidbrd, idMan, fotoDados, fotoNomeReal);
@@ -174,7 +175,7 @@ export default async function handler(req, res) {
           tipo:      'MANIFESTO',
           tipo_op:   'MANIFESTO',
           manifesto: Number(idMan),
-          eventos: [{ codigo: 1, data: dataSaida, obs: `Hodômetro saída — KM ${kmInicial}` }],
+          eventos: [{ codigo: 1, data: dataSaida, obs: `HodÃ´metro saÃ­da â KM ${kmInicial}` }],
           anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
         }]
       })
