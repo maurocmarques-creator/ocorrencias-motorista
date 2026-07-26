@@ -3,7 +3,7 @@ const BASES = {
     url:     'https://azportoex.brudam.com.br/api/v1',
     usuario: '80f260dcd0a7764a0e1b32e4c6595730',
     senha:   '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63',
-    // Tokens estáticos por unidade (não requerem login)
+    // Tokens estÃ¡ticos por unidade (nÃ£o requerem login)
     tokens: [
       '1308e5c7e08678a69977454eee14598a0e0c6b16b094d9b4df', // MATRIZ
       '07e0ee0a7b679edad721e952ae940c8aad72cb8f8cb26c2088'  // FILIAL SP
@@ -64,6 +64,7 @@ async function trySaida(baseUrl, token, idMan, kmInicial, dataSaida) {
   return { ok: r.ok, status: r.status, msg, json: j, headers };
 }
 
+// v3 - tokens MATRIZ/FILIAL para porto, ptx, pex
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -84,7 +85,7 @@ export default async function handler(req, res) {
     for (const baseKey of baseOrder) {
       const b = BASES[baseKey];
 
-      // Monta lista de tokens a tentar: tokens estáticos (se houver) + login
+      // Monta lista de tokens a tentar: tokens estÃ¡ticos (se houver) + login
       const tokenList = [];
       if (b.tokens?.length) {
         tokenList.push(...b.tokens.map(t => ({ token: t, source: 'static' })));
@@ -100,7 +101,7 @@ export default async function handler(req, res) {
         const msgLow = result.msg.toLowerCase();
 
         if (result.ok) {
-          // Sucesso — envia foto do hodômetro
+          // Sucesso â envia foto do hodÃ´metro
           const headers = result.headers;
           const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
             method: 'POST',
@@ -127,13 +128,13 @@ export default async function handler(req, res) {
           });
         }
 
-        // Manifesto não encontrado nesse token/base → tenta próximo
-        if (msgLow.includes('nao encontrado') || msgLow.includes('não encontrado') ||
+        // Manifesto nÃ£o encontrado nesse token/base â tenta prÃ³ximo
+        if (msgLow.includes('nao encontrado') || msgLow.includes('nÃ£o encontrado') ||
             msgLow.includes('unidade') || msgLow.includes('token')) {
           continue;
         }
 
-        // Outro erro (KM inválido, status errado, etc.) — retorna sem tentar mais
+        // Outro erro (KM invÃ¡lido, status errado, etc.) â retorna sem tentar mais
         return res.status(400).json({
           error: result.msg || 'Erro ao registrar saida.',
           dataSaidaEnviada: dataSaidaBrudam,
