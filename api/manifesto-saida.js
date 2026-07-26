@@ -14,11 +14,20 @@ function md5(str) {
   return createHash('md5').update(str).digest('hex');
 }
 
-// Timestamp do servidor no formato Brudam: "DD/MM/YYYY HH:MM:SS"
+// Timestamp no formato Brudam: "DD/MM/YYYY HH:MM:SS" â usa fuso de BrasÃ­lia
 function nowBrudam() {
-  const now = new Date();
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   const pad = n => String(n).padStart(2, '0');
   return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+// Converte "YYYY-MM-DD HH:MM:SS" (vindo do datetime-local do form) para "DD/MM/YYYY HH:MM:SS"
+function isoToBrudam(s) {
+  if (!s) return null;
+  const [datePart, timePart] = s.split(' ');
+  if (!datePart || !timePart) return null;
+  const [y, m, d] = datePart.split('-');
+  return `${d}/${m}/${y} ${timePart}`;
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -39,7 +48,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo nao permitido.' });
 
-  const { base, idMan, kmInicial, fotoNome, fotoDados, cliente, brudamUsuario, brudamSenha } = req.body || {};
+  const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente, brudamUsuario, brudamSenha } = req.body || {};
 
   const b = BASES[base];
   if (!b) return res.status(400).json({ error: 'Base invalida.' });
@@ -66,7 +75,7 @@ export default async function handler(req, res) {
         loginMethod   = attempt.label;
         break;
       } catch (_) {
-        await sleep(400); // respeita limite de 3 req/s do Brudam
+        await sleep(400);
       }
     }
 
@@ -81,7 +90,9 @@ export default async function handler(req, res) {
           senha:   loginAttempts.find(a => a.label === loginMethod).s }
       : { usuario: b.usuario, senha: b.senha };
 
-    const dataSaidaBrudam = nowBrudam();
+    // Usa a hora enviada pelo form (jÃ¡ em horÃ¡rio local do motorista); fallback = agora em BrasÃ­lia
+    const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
+
     const saidaPayload = { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida: dataSaidaBrudam };
 
     const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
@@ -102,7 +113,8 @@ export default async function handler(req, res) {
           loginMethod,
           personalLoginOk: !!personalToken,
           saidaStatus: rSaida.status,
-          saidaBody:   saidaText.slice(0, 500)
+          saidaBody:   saidaText.slice(0, 500),
+          dataSaidaEnviada: dataSaidaBrudam
         }
       });
     }
