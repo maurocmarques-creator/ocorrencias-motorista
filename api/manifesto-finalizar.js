@@ -39,18 +39,19 @@ async function login(base) {
   return j.data.access_key;
 }
 
-// Obtém sessão web do Brudam (token uidbrd) para salvar no ANEXO do manifesto
+// ObtÃ©m sessÃ£o web do Brudam (token uidbrd) para salvar no ANEXO do manifesto
 async function getWebSession(base) {
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
   if (!base.webUser || !base.webPass) return null;
   try {
-    // 1) Buscar CSRF token da página de login
-    const pageResp = await fetch(`${base.web}/`, { redirect: 'follow' });
+    // 1) Buscar CSRF token da pÃ¡gina de login
+    const pageResp = await fetch(`${base.web}/`, { redirect: 'follow', headers: { 'User-Agent': UA } });
     const pageHtml = await pageResp.text();
     const tokenMatch = pageHtml.match(/name="token"[^>]*value="([^"]+)"/);
     const csrfToken = tokenMatch?.[1];
     if (!csrfToken) return null;
 
-    // 2) Fazer login — retorna uidbrd em data.udata.uidbrd
+    // 2) Fazer login â retorna uidbrd em data.udata.uidbrd
     const loginResp = await fetch(`${base.web}/brd/sys/login/tms`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,7 +85,7 @@ async function uploadAnexo(base, bearerToken, uidbrd, idMan, fotoDados, fotoNome
   const s3Data = await s3Resp.json();
   if (!s3Data.status) throw new Error('Upload S3 falhou: ' + s3Data.message);
   const s3Url = s3Data.data?.[0];
-  if (!s3Url) throw new Error('URL S3 não retornada');
+  if (!s3Url) throw new Error('URL S3 nÃ£o retornada');
 
   // Etapa 2: Associar arquivo ao manifesto via gravaAnexo.php (cookie uidbrd)
   const boundary = `----Boundary${Date.now()}`;
@@ -105,16 +106,16 @@ async function uploadAnexo(base, bearerToken, uidbrd, idMan, fotoDados, fotoNome
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'MÃ©todo nÃ£o permitido.' });
 
   const { base, idMan, kmFinal, dataChegada, fotoNome, fotoDados, cliente } = req.body || {};
 
   const b = BASES[base];
-  if (!b)           return res.status(400).json({ error: 'Base inválida.' });
-  if (!idMan)       return res.status(400).json({ error: 'idMan obrigatório.' });
-  if (!kmFinal)     return res.status(400).json({ error: 'kmFinal obrigatório.' });
-  if (!dataChegada) return res.status(400).json({ error: 'dataChegada obrigatório.' });
-  if (!fotoDados)   return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
+  if (!b)           return res.status(400).json({ error: 'Base invÃ¡lida.' });
+  if (!idMan)       return res.status(400).json({ error: 'idMan obrigatÃ³rio.' });
+  if (!kmFinal)     return res.status(400).json({ error: 'kmFinal obrigatÃ³rio.' });
+  if (!dataChegada) return res.status(400).json({ error: 'dataChegada obrigatÃ³rio.' });
+  if (!fotoDados)   return res.status(400).json({ error: 'Foto do hodÃ´metro obrigatÃ³ria.' });
 
   try {
     const token = await login(b);
@@ -124,7 +125,7 @@ export default async function handler(req, res) {
     };
     const fotoNomeReal = fotoNome || `hodometro_chegada_${idMan}.jpg`;
 
-    // 0) Pre-check: minutas sem ocorrência
+    // 0) Pre-check: minutas sem ocorrÃªncia
     try {
       const rMan = await fetch(`${b.url}/operacional/consulta/manifesto/${idMan}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -143,7 +144,7 @@ export default async function handler(req, res) {
               .map(doc => doc.minuta || doc.documento || doc.numero || doc.cte || doc.id)
               .filter(Boolean);
             return res.status(422).json({
-              error: `${semOcorrencia.length} minuta(s) sem ocorrência. Registre antes de finalizar.`,
+              error: `${semOcorrencia.length} minuta(s) sem ocorrÃªncia. Registre antes de finalizar.`,
               minutas_pendentes: nums
             });
           }
@@ -162,7 +163,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2) Salvar foto no tracking/ocorrências (registro de evento)
+    // 2) Salvar foto no tracking/ocorrÃªncias (registro de evento)
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method:  'POST',
       headers,
@@ -176,7 +177,7 @@ export default async function handler(req, res) {
           eventos: [{
             codigo: 1,
             data:   dataChegada,
-            obs:    `Hodômetro chegada — KM ${kmFinal}`
+            obs:    `HodÃ´metro chegada â KM ${kmFinal}`
           }],
           anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
         }]
@@ -184,7 +185,7 @@ export default async function handler(req, res) {
     });
     const jFoto = await rFoto.json();
 
-    // 3) Finalizar manifesto — tenta cada token estático até um funcionar
+    // 3) Finalizar manifesto â tenta cada token estÃ¡tico atÃ© um funcionar
     let rFin, jFin;
     for (const tok of b.tokens) {
       rFin = await fetch(`${b.url}/operacional/alteracao/manifesto/finalizarManifesto`, {
