@@ -76,7 +76,7 @@
 
     label.field-label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
 
-    input[type=text], input[type=number], input[type=password], select, textarea {
+    input[type=text], input[type=number], select, textarea {
       width: 100%;
       padding: 13px 12px;
       border: 1.5px solid #ddd;
@@ -319,8 +319,9 @@
       <h2>Etapa 1 — Saída</h2>
 
       <div id="m-aviso-emissao" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#5d4037;">
-        ⚠️ A data de saída deve ser <strong>posterior à emissão do manifesto</strong>:<br>
-        <span id="m-emissao-txt" style="font-weight:bold;font-size:14px;color:#333;"></span>
+        ⚠️ Previsão de saída do manifesto:<br>
+        <span id="m-emissao-txt" style="font-weight:bold;font-size:14px;color:#333;"></span><br>
+        <span style="font-size:12px;color:#7d5c00;">Use esta data/hora ou posterior para registrar a saída.</span>
       </div>
 
       <div class="field-group">
@@ -342,16 +343,6 @@
           <img id="mfoto-saida-preview" alt="Hodômetro saída" style="max-width:100%;border-radius:8px;margin-top:10px;display:none;">
           <div id="mfoto-saida-badge" class="foto-badge" style="display:none;">✓ Foto selecionada</div>
         </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">🔑 Usuário Brudam <span style="color:#c00">*</span></label>
-        <input type="text" id="m-brudam-usuario" placeholder="Ex: MCM" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase">
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">🔒 Senha Brudam <span style="color:#c00">*</span></label>
-        <input type="password" id="m-brudam-senha" placeholder="Senha do operador" autocomplete="off">
       </div>
 
       <div id="merr2" class="error-box"></div>
@@ -835,52 +826,58 @@
       const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[mBaseSel];
 
       // Monta o bloco de info com o que o Brudam retornou (pode ser vazio)
-      const d = j.data || {};
+      // Brudam retorna dados sob j.data.manifesto — normaliza para um nível só
+      const d = j.data?.manifesto || j.data || {};
       // Normaliza nomes de campo — Brudam pode usar variações
-      const motorista = d.motorista || d.nome_motorista || d.motorista_nome || d.nome || '';
-      const placa     = d.placa || d.placa_veiculo || d.veiculo_placa || (d.veiculo && d.veiculo.placa) || '';
-      const entregas  = d.qtd_entregas ?? d.total_entregas ?? d.quantidade_entregas ?? d.notas_count ?? null;
-      const status    = d.status_descricao || d.descricao_status || (d.status && typeof d.status === 'object' ? d.status.descricao : '') || '';
+      const motorista = d.nome_motorista || d.motorista || d.motorista_nome || d.nome_responsavel || '';
+      const placa     = d.placa_veiculo  || d.placa     || d.veiculo_placa  || (d.veiculo && d.veiculo.placa) || '';
+      const unidade   = d.unidade || '';
+      const statusTxt = d.status  || d.status_descricao || d.descricao_status || '';
+      const entregas  = d.entregas ?? d.qtd_entregas ?? d.total_entregas ?? null;
       let html = `
         <div class="info-row"><span class="info-key">Empresa</span><span class="info-val">${nomeBase}</span></div>
         <div class="info-row"><span class="info-key">Manifesto</span><span class="info-val">${id}</span></div>
       `;
       if (motorista) html += `<div class="info-row"><span class="info-key">Motorista</span><span class="info-val">${motorista}</span></div>`;
       if (placa)     html += `<div class="info-row"><span class="info-key">Placa</span><span class="info-val">${placa}</span></div>`;
-      if (entregas !== null) html += `<div class="info-row"><span class="info-key">Entregas</span><span class="info-val">${entregas}</span></div>`;
-      if (status)    html += `<div class="info-row"><span class="info-key">Status</span><span class="info-val">${status}</span></div>`;
+      if (unidade)   html += `<div class="info-row"><span class="info-key">Unidade</span><span class="info-val">${unidade}</span></div>`;
+      if (entregas !== null && entregas !== undefined) html += `<div class="info-row"><span class="info-key">Entregas</span><span class="info-val">${Array.isArray(entregas) ? entregas.length : entregas}</span></div>`;
+      if (statusTxt) html += `<div class="info-row"><span class="info-key">Status</span><span class="info-val">${statusTxt}</span></div>`;
 
       // Se o Brudam não tem endpoint de consulta (skip_consulta), avança mesmo assim
       if (!r.ok && !j.skip_consulta) {
         throw new Error(j.error || j.message || 'Manifesto não encontrado.');
       }
 
-      // Data de emissão do manifesto (vários nomes possíveis no Brudam)
-      const emissao = d.data_emissao || d.dt_emissao || d.data_manifesto || d.dt_manifesto || d.emissao || d.data || '';
-      const avisoEl = document.getElementById('m-aviso-emissao');
+      // Previsão de saída — usa prev_saida como referência de horário mínimo
+      const prevSaida = d.prev_saida || d.data_emissao || d.dt_emissao || d.data_manifesto || d.emissao || '';
+      const avisoEl   = document.getElementById('m-aviso-emissao');
       const emissaoTxt = document.getElementById('m-emissao-txt');
-      if (emissao) {
-        // Normaliza para "DD/MM/YYYY HH:MM" para exibição
-        let emissaoFmt = emissao;
+      const p = n => String(n).padStart(2,'0');
+      let dataSaidaDefault = nowLocalDatetime(); // fallback: agora
+
+      if (prevSaida) {
         try {
-          const dt = new Date(emissao.replace(' ', 'T'));
-          if (!isNaN(dt)) {
-            const p = n => String(n).padStart(2,'0');
-            emissaoFmt = `${p(dt.getDate())}/${p(dt.getMonth()+1)}/${dt.getFullYear()} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
-            // Define o min do campo de saída
-            const minVal = `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}`;
-            document.getElementById('m-data-saida').min = minVal;
+          const dtPrev = new Date(prevSaida.replace(' ', 'T'));
+          if (!isNaN(dtPrev)) {
+            const prevFmt = `${p(dtPrev.getDate())}/${p(dtPrev.getMonth()+1)}/${dtPrev.getFullYear()} ${p(dtPrev.getHours())}:${p(dtPrev.getMinutes())}`;
+            emissaoTxt.textContent = prevFmt;
+            avisoEl.style.display = 'block';
+            // Se a previsão de saída for no futuro, pré-preenche com ela; senão usa agora
+            const now = new Date();
+            if (dtPrev > now) {
+              const minVal = `${dtPrev.getFullYear()}-${p(dtPrev.getMonth()+1)}-${p(dtPrev.getDate())}T${p(dtPrev.getHours())}:${p(dtPrev.getMinutes())}`;
+              dataSaidaDefault = minVal;
+            }
           }
         } catch(_) {}
-        emissaoTxt.textContent = emissaoFmt;
-        avisoEl.style.display = 'block';
       } else {
         avisoEl.style.display = 'none';
       }
 
       document.getElementById('m-info').innerHTML  = html;
       document.getElementById('m-info2').innerHTML = html;
-      document.getElementById('m-data-saida').value = nowLocalDatetime();
+      document.getElementById('m-data-saida').value = dataSaidaDefault;
       mGo('mstep1','mstep2');
     } catch(e) {
       showErr(err, e.message);
@@ -933,16 +930,12 @@
     const err = document.getElementById('merr2');
     err.style.display = 'none';
 
-    const dataSaidaRaw  = document.getElementById('m-data-saida').value;
-    const kmIni         = document.getElementById('m-km-inicial').value.trim();
-    const brudamUsuario = document.getElementById('m-brudam-usuario').value.trim();
-    const brudamSenha   = document.getElementById('m-brudam-senha').value;
+    const dataSaidaRaw = document.getElementById('m-data-saida').value;
+    const kmIni = document.getElementById('m-km-inicial').value.trim();
 
     if (!dataSaidaRaw)   return showErr(err, 'Informe a data e hora de saída.');
     if (!kmIni)          return showErr(err, 'Informe o KM inicial.');
     if (!mFotoSaidaB64)  return showErr(err, 'A foto do hodômetro de saída é obrigatória.');
-    if (!brudamUsuario)  return showErr(err, 'Informe o usuário Brudam.');
-    if (!brudamSenha)    return showErr(err, 'Informe a senha Brudam.');
 
     const btn = document.getElementById('mbtn-saida');
     btn.innerHTML = '<span class="spinner"></span>Registrando saída...';
@@ -953,14 +946,13 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          base:          mBaseSel,
-          idMan:         parseInt(mManifestoId),
-          kmInicial:     parseInt(kmIni),
-          fotoNome:      mFotoSaidaNome || `hodometro_saida_${mManifestoId}.jpg`,
-          fotoDados:     mFotoSaidaB64,
-          cliente:       mManifestoData?.cliente || '',
-          brudamUsuario: brudamUsuario,
-          brudamSenha:   brudamSenha
+          base:       mBaseSel,
+          idMan:      parseInt(mManifestoId),
+          kmInicial:  parseInt(kmIni),
+          dataSaida:  datetimeLocalToApi(dataSaidaRaw),
+          fotoNome:   mFotoSaidaNome || `hodometro_saida_${mManifestoId}.jpg`,
+          fotoDados:  mFotoSaidaB64,
+          cliente:    mManifestoData?.cliente || ''
         })
       });
       const j = await r.json();
@@ -1066,8 +1058,6 @@
     document.getElementById('m-km-final').value = '';
     document.getElementById('m-data-saida').value = '';
     document.getElementById('m-data-chegada').value = '';
-    document.getElementById('m-brudam-usuario').value = '';
-    document.getElementById('m-brudam-senha').value   = '';
     document.getElementById('m-km-warn').style.display = 'none';
     ['merr1','merr2','merr3'].forEach(id => {
       const el = document.getElementById(id);
