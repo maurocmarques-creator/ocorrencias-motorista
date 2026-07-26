@@ -109,7 +109,7 @@ export default async function handler(req, res) {
     for (const baseKey of baseOrder) {
       const b = BASES[baseKey];
 
-      // Tokens estáticos + login como fallback
+      // Tokens estˡticos + login como fallback
       const tokenList = [];
       if (b.tokens?.length) {
         tokenList.push(...b.tokens.map(t => ({ token: t, source: 'static' })));
@@ -137,26 +137,47 @@ export default async function handler(req, res) {
         const msgLow = result.msg.toLowerCase();
 
         if (result.ok) {
-          // Sucesso — envia foto do hodômetro
+          const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
+          const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+          // Etapa 3a: Salva foto no ANEXO do manifesto
+          let jAnexo = {};
+          const tpManList = tpMan ? [tpMan] : [1, 2, 3, 4, 5, 6, 'transf'];
+          for (const tp of tpManList) {
+            try {
+              const rAnexo = await fetch(`${b.url}/operacional/alteracao/manifesto/anexo`, {
+                method: 'POST', headers: authHeaders,
+                body: JSON.stringify({ idMan: Number(idMan), tpMan: tp, arquivo: { nome: fotoNomeReal, dados: fotoDados } })
+              });
+              jAnexo = await rAnexo.json().catch(() => ({}));
+              const am = (jAnexo.data?.message || jAnexo.message || '').toLowerCase();
+              if (rAnexo.ok) break;
+              if (am.includes('tpman') || am.includes('deve conter')) continue;
+              break; // outro erro — para
+            } catch (_) { break; }
+          }
+
+          // Etapa 3b: Registra ocorrência de tracking com foto
           const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
             method: 'POST',
-            headers: result.headers,
+            headers: authHeaders,
             body: JSON.stringify({
               auth: { usuario: b.usuario, senha: b.senha },
               documentos: [{
                 cliente: cliente || '',
-                tipo: 'MANIFESTO',
-                tipo_op: 'MANIFESTO',
+                tipo: 'MANIFESTO', tipo_op: 'MANIFESTO',
                 manifesto: Number(idMan),
                 eventos: [{ codigo: 1, data: dataSaidaBrudam, obs: `Hodometro saida - KM ${kmInicial}` }],
-                anexos: [{ arquivo: { nome: fotoNome || `hodometro_saida_${idMan}.jpg`, dados: fotoDados } }]
+                anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
               }]
             })
           });
           const jFoto = await rFoto.json().catch(() => ({}));
+
           return res.status(200).json({
             saida: { ok: true, data: result.json },
             foto: jFoto,
+            anexo: jAnexo,
             timestamp: dataSaidaBrudam,
             baseUsada: baseKey,
             tokenSource: source,
