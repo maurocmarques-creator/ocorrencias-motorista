@@ -980,6 +980,20 @@
       const dtFmt = `${pad(dtSaida.getDate())}/${pad(dtSaida.getMonth()+1)}/${dtSaida.getFullYear()} ${pad(dtSaida.getHours())}:${pad(dtSaida.getMinutes())}`;
       document.getElementById('m-saida-dt-txt').textContent = dtFmt;
       document.getElementById('m-saida-km-txt').textContent = parseInt(kmIni).toLocaleString('pt-BR') + ' km';
+
+      // Diagnóstico do ANEXO
+      const anexoMsg = j.anexo?.data?.message || j.anexo?.message || '';
+      const anexoOk = !j.anexo || !anexoMsg || (!anexoMsg.includes('não pode') && !anexoMsg.includes('nao pode'));
+      const saida_info_el = document.getElementById('m-saida-confirmada');
+      if (saida_info_el) {
+        const fotoInfo = document.createElement('p');
+        fotoInfo.style.cssText = 'font-size:11px;opacity:.65;margin-top:6px;';
+        fotoInfo.innerHTML = anexoOk
+          ? '📷 Foto salva no ANEXO' + (anexoMsg ? ` (${anexoMsg.substring(0,50)})` : '')
+          : '⚠️ Foto não salva: ' + anexoMsg.substring(0,80);
+        saida_info_el.appendChild(fotoInfo);
+      }
+
       document.getElementById('m-saida-confirmada').style.display = 'block';
 
       mGo('mstep2','mstep3');
