@@ -132,32 +132,32 @@ export default async function handler(req, res) {
           // (prev_saida pode já estar OK, ou erro não impede saidaEfetiva)
         }
 
-        // --- Etapa 2: Registra saída efetiva ---
+        const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
+
+        // --- Etapa 2: Adiciona foto no ANEXO (antes da saída — manifesto ainda Fechado) ---
+        let jAnexo = {};
+        const tpManList2 = tpMan ? [tpMan] : [1, 2, 3, 4, 5, 6, 'transf'];
+        for (const tp of tpManList2) {
+          try {
+            const rAnexo = await fetch(`${b.url}/operacional/alteracao/manifesto/anexo`, {
+              method: 'POST', headers: authHeaders,
+              body: JSON.stringify({ idMan: Number(idMan), tpMan: tp, arquivo: { nome: fotoNomeReal, dados: fotoDados } })
+            });
+            jAnexo = await rAnexo.json().catch(() => ({}));
+            const am = (jAnexo.data?.message || jAnexo.message || '').toLowerCase();
+            if (rAnexo.ok) break;
+            if (am.includes('tpman') || am.includes('deve conter')) continue;
+            break;
+          } catch (_) { break; }
+        }
+
+        // --- Etapa 3: Registra saída efetiva ---
         const result = await trySaida(b.url, token, idMan, kmInicial, dataSaidaBrudam);
         const msgLow = result.msg.toLowerCase();
 
         if (result.ok) {
-          const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
-          const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-
-          // Etapa 3a: Salva foto no ANEXO do manifesto
-          let jAnexo = {};
-          const tpManList = tpMan ? [tpMan] : [1, 2, 3, 4, 5, 6, 'transf'];
-          for (const tp of tpManList) {
-            try {
-              const rAnexo = await fetch(`${b.url}/operacional/alteracao/manifesto/anexo`, {
-                method: 'POST', headers: authHeaders,
-                body: JSON.stringify({ idMan: Number(idMan), tpMan: tp, arquivo: { nome: fotoNomeReal, dados: fotoDados } })
-              });
-              jAnexo = await rAnexo.json().catch(() => ({}));
-              const am = (jAnexo.data?.message || jAnexo.message || '').toLowerCase();
-              if (rAnexo.ok) break;
-              if (am.includes('tpman') || am.includes('deve conter')) continue;
-              break; // outro erro — para
-            } catch (_) { break; }
-          }
-
-          // Etapa 3b: Registra ocorrência de tracking com foto
+          // Etapa 4: Registra ocorrência de tracking com foto
           const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
             method: 'POST',
             headers: authHeaders,
