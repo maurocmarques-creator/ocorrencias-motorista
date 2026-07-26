@@ -1,7 +1,29 @@
 const BASES = {
-  porto: { url: 'https://azportoex.brudam.com.br/api/v1', usuario: '80f260dcd0a7764a0e1b32e4c6595730', senha: '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63' },
-  ptx:   { url: 'https://ptxtransporte.brudam.com.br/api/v1', usuario: 'b45831041f9926f61af06e982cd70e63', senha: '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537' },
-  pex:   { url: 'https://pexlogistica.brudam.com.br/api/v1', usuario: '19657d11bf9e3384271a8e455631ee4e', senha: '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba' }
+  porto: {
+    url:     'https://azportoex.brudam.com.br/api/v1',
+    usuario: '80f260dcd0a7764a0e1b32e4c6595730',
+    senha:   '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63',
+    tokens: [
+      '1308e5c7e08678a69977454eee14598a0e0c6b16b094d9b4df', // MATRIZ
+      '07e0ee0a7b679edad721e952ae940c8aad72cb8f8cb26c2088'  // FILIAL SP
+    ]
+  },
+  ptx: {
+    url:     'https://ptxtransporte.brudam.com.br/api/v1',
+    usuario: 'b45831041f9926f61af06e982cd70e63',
+    senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537',
+    tokens: [
+      '76ab1df4a1ccad39a60280122522032ff4d1872a06b4f5e9ca'  // MATRIZ
+    ]
+  },
+  pex: {
+    url:     'https://pexlogistica.brudam.com.br/api/v1',
+    usuario: '19657d11bf9e3384271a8e455631ee4e',
+    senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba',
+    tokens: [
+      '433959304b9584587a0427b6c605d33978f0a62572f37a2836'  // MATRIZ
+    ]
+  }
 };
 
 function nowBrudam() {
@@ -29,68 +51,93 @@ async function login(url, usuario, senha) {
   return j.data.access_key;
 }
 
-// Testa uma variante específica de auth para saidaEfetiva
-async function trySaidaVariant(baseUrl, token, idMan, kmInicial, dataSaida, authBody) {
+// Etapa 1: Atualiza a previsão de saída no Brudam (necessário quando prev_saida está no passado)
+async function tryUpdatePrevSaida(baseUrl, token, idMan, dataSaida, tpMan) {
   const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-  const payload = { idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida };
-  if (authBody !== undefined) payload.auth = authBody;
+  // Tenta os tipos de manifesto mais comuns em sequência
+  const tpManList = tpMan ? [tpMan] : [1, 2, 3, 4, 5, 6, 'transf'];
+  for (const tp of tpManList) {
+    try {
+      const r = await fetch(`${baseUrl}/operacional/alteracao/manifesto/previsaoSaida`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ idMan: Number(idMan), previsaoSaida: dataSaida, tpMan: tp })
+      });
+      const j = await r.json().catch(() => ({}));
+      const msg = (j.data?.message || j.message || j.error || '').toLowerCase();
+      if (r.ok) return { ok: true, tpMan: tp, msg: '' };
+      // Se erro é sobre tpMan inválido, tenta o próximo
+      if (msg.includes('tpman') || msg.includes('deve conter')) continue;
+      // Qualquer outro erro (inclui "não pode ser modificado"): para de tentar
+      return { ok: false, tpMan: tp, msg: j.data?.message || j.message || msg };
+    } catch (_) {
+      return { ok: false, tpMan: null, msg: 'network error' };
+    }
+  }
+  return { ok: false, tpMan: null, msg: 'tpMan nao reconhecido' };
+}
 
+// Etapa 2: Registra a saída efetiva
+async function trySaida(baseUrl, token, idMan, kmInicial, dataSaida) {
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
   const r = await fetch(`${baseUrl}/operacional/alteracao/manifesto/saidaEfetiva`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida })
   });
-  const text = await r.text();
-  let j = {};
-  try { j = JSON.parse(text); } catch {}
-  const msg = j.data?.message || j.message || j.error || text.slice(0, 200);
+  const j = await r.json().catch(() => ({}));
+  const msg = j.data?.message || j.message || j.error || '';
   return { ok: r.ok, status: r.status, msg, json: j, headers };
 }
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo nao permitido.' });
 
-  const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente } = req.body || {};
+  const { base, idMan, kmInicial, dataSaida, tpMan, fotoNome, fotoDados, cliente } = req.body || {};
 
   if (!idMan)     return res.status(400).json({ error: 'idMan obrigatorio.' });
   if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatorio.' });
   if (!fotoDados) return res.status(400).json({ error: 'Foto do hodometro obrigatoria.' });
 
   const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
-
   const baseOrder = base && BASES[base]
     ? [base, ...Object.keys(BASES).filter(k => k !== base)]
     : Object.keys(BASES);
 
-  const allAttempts = [];
-
   try {
     for (const baseKey of baseOrder) {
       const b = BASES[baseKey];
-      let token;
-      try {
-        token = await login(b.url, b.usuario, b.senha);
-      } catch (e) {
-        allAttempts.push({ base: baseKey, loginError: e.message });
-        continue;
+
+      // Tokens estáticos + login como fallback
+      const tokenList = [];
+      if (b.tokens?.length) {
+        tokenList.push(...b.tokens.map(t => ({ token: t, source: 'static' })));
       }
+      try {
+        const loginToken = await login(b.url, b.usuario, b.senha);
+        tokenList.push({ token: loginToken, source: 'login' });
+      } catch (_) {}
 
-      // Variantes de auth a testar em ordem
-      const authVariants = [
-        { label: 'sistema_hash',   body: { usuario: b.usuario, senha: b.senha } },
-        { label: 'sem_auth',       body: undefined },
-        { label: 'MCM_plain',      body: { usuario: 'MCM', senha: 'Portoex18' } },
-        { label: 'mcm_lower',      body: { usuario: 'mcm', senha: 'Portoex18' } },
-        { label: 'mcm_md5_sha256', body: { usuario: '5b843ed5160086c2d34710c0ef6a1da6', senha: 'ecf6387852f87cb5b2327b541fb7c933e2dd42d17d34e9947a0ad2cedefc42cb' } },
-      ];
+      for (const { token, source } of tokenList) {
+        // --- Etapa 1: Atualiza previsão de saída ---
+        const prevResult = await tryUpdatePrevSaida(b.url, token, idMan, dataSaidaBrudam, tpMan);
+        // Se falhou por auth (unidade/token), este token não serve — tenta próximo
+        if (!prevResult.ok) {
+          const pm = prevResult.msg.toLowerCase();
+          if (pm.includes('unidade') || pm.includes('token') || pm.includes('nao encontrado') || pm.includes('não encontrado')) {
+            continue;
+          }
+          // "Não pode ser modificado" ou outro erro de negócio: continua mesmo assim
+          // (prev_saida pode já estar OK, ou erro não impede saidaEfetiva)
+        }
 
-      for (const variant of authVariants) {
-        const result = await trySaidaVariant(b.url, token, idMan, kmInicial, dataSaidaBrudam, variant.body);
-        allAttempts.push({ base: baseKey, auth: variant.label, ok: result.ok, status: result.status, msg: result.msg });
+        // --- Etapa 2: Registra saída efetiva ---
+        const result = await trySaida(b.url, token, idMan, kmInicial, dataSaidaBrudam);
+        const msgLow = result.msg.toLowerCase();
 
         if (result.ok) {
-          // SUCESSO — envia foto
+          // Sucesso — envia foto do hodômetro
           const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
             method: 'POST',
             headers: result.headers,
@@ -112,27 +159,34 @@ export default async function handler(req, res) {
             foto: jFoto,
             timestamp: dataSaidaBrudam,
             baseUsada: baseKey,
-            authUsada: variant.label
+            tokenSource: source,
+            prevSaidaAtualizada: prevResult.ok
           });
         }
 
-        // Se a mensagem mudou (não é mais "unidade/token"), parar nas variantes —
-        // é um erro diferente (ex: data inválida, manifesto não encontrado)
-        const msg = result.msg.toLowerCase();
-        if (!msg.includes('unidade') && !msg.includes('token') && !msg.includes('nao encontrado') && !msg.includes('não encontrado')) {
-          break; // Esse base+auth chegou mais longe; erros restantes são de outro tipo
+        // Manifesto não encontrado neste token/base → tenta próximo
+        if (msgLow.includes('nao encontrado') || msgLow.includes('não encontrado') ||
+            msgLow.includes('unidade') || msgLow.includes('token')) {
+          continue;
         }
+
+        // Outro erro de negócio → retorna direto ao usuário
+        return res.status(400).json({
+          error: result.msg || 'Erro ao registrar saida.',
+          dataSaidaEnviada: dataSaidaBrudam,
+          baseUsada: baseKey,
+          prevSaidaAtualizada: prevResult.ok,
+          prevSaidaErro: prevResult.ok ? null : prevResult.msg
+        });
       }
     }
 
-    // Nenhuma combinação funcionou ℔ retorna diagnóstico completo
     return res.status(400).json({
-      error: 'Saida nao registrada. Veja attempts para diagnostico.',
-      dataSaidaEnviada: dataSaidaBrudam,
-      attempts: allAttempts
+      error: 'Manifesto nao encontrado em nenhuma base.',
+      dataSaidaEnviada: dataSaidaBrudam
     });
 
   } catch (e) {
-    return res.status(500).json({ error: e.message, attempts: allAttempts });
+    return res.status(500).json({ error: e.message });
   }
 }
