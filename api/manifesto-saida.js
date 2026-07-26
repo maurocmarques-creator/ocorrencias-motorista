@@ -4,6 +4,7 @@ const BASES = {
     web:     'https://azportoex.brudam.com.br',
     usuario: '80f260dcd0a7764a0e1b32e4c6595730',
     senha:   '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63',
+    tokens:  ['1308e5c7e08678a69977454eee14598a0e0c6b16b094d9b4df', '07e0ee0a7b679edad721e952ae940c8aad72cb8f8cb26c2088'],
     webUser: process.env.BRUDAM_PORTO_WEB_USER,
     webPass: process.env.BRUDAM_PORTO_WEB_PASS
   },
@@ -12,6 +13,7 @@ const BASES = {
     web:     'https://ptxtransporte.brudam.com.br',
     usuario: 'b45831041f9926f61af06e982cd70e63',
     senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537',
+    tokens:  ['76ab1df4a1ccad39a60280122522032ff4d1872a06b4f5e9ca'],
     webUser: process.env.BRUDAM_PTX_WEB_USER,
     webPass: process.env.BRUDAM_PTX_WEB_PASS
   },
@@ -20,6 +22,7 @@ const BASES = {
     web:     'https://pexlogistica.brudam.com.br',
     usuario: '19657d11bf9e3384271a8e455631ee4e',
     senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba',
+    tokens:  ['433959304b9584587a0427b6c605d33978f0a62572f37a2836'],
     webUser: process.env.BRUDAM_PEX_WEB_USER,
     webPass: process.env.BRUDAM_PEX_WEB_PASS
   }
@@ -131,21 +134,23 @@ export default async function handler(req, res) {
     };
     const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
 
-    // 1) Registrar saída efetiva
-    const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        auth:      { usuario: b.usuario, senha: b.senha },
-        idMan:     Number(idMan),
-        kmInicial: Number(kmInicial),
-        dataSaida: dataSaida
-      })
-    });
-    const jSaida = await rSaida.json().catch(() => ({}));
+    // 1) Registrar saída efetiva — tenta cada token estático até um funcionar
+    let rSaida, jSaida;
+    for (const tok of b.tokens) {
+      rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
+        body: JSON.stringify({ idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida })
+      });
+      jSaida = await rSaida.json().catch(() => ({}));
+      if (rSaida.ok) break;
+      // Se o erro for de unidade não encontrada, tenta o próximo token
+      const msg = (jSaida?.data?.message || jSaida?.message || '').toLowerCase();
+      if (!msg.includes('unidade')) break; // outro erro — não adianta tentar outro token
+    }
     if (!rSaida.ok) {
       return res.status(rSaida.status).json({
-        error:  jSaida.message || jSaida.error || 'Erro ao registrar saída.',
+        error:  jSaida?.data?.message || jSaida?.message || jSaida?.error || 'Erro ao registrar saída.',
         detail: jSaida
       });
     }
