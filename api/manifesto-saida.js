@@ -58,6 +58,11 @@ export default async function handler(req, res) {
   if (!brudamUsuario || !brudamSenha) return res.status(400).json({ error: 'Usuario e senha Brudam obrigatorios.' });
 
   try {
+    // -------------------------------------------------------------------
+    // 1) Login pessoal com credenciais do operador
+    //    Brudam armazena senha como SHA256; tenta primeiro com SHA256,
+    //    depois com MD5(usuario)+SHA256(senha), depois plain text.
+    // -------------------------------------------------------------------
     const senhaSha256 = sha256(brudamSenha);
     const senhaMd5    = md5(brudamSenha);
     const usuarioMd5  = md5(brudamUsuario.trim().toUpperCase());
@@ -93,13 +98,19 @@ export default async function handler(req, res) {
 
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
+    // auth do saidaEfetiva: usa o mesmo usuario/senha que funcionou no login pessoal,
+    // ou as credenciais do sistema como fallback
     const authBody = personalToken
       ? { usuario: loginAttempts.find(a => a.label === loginMethod).u,
           senha:   loginAttempts.find(a => a.label === loginMethod).s }
       : { usuario: b.usuario, senha: b.senha };
 
+    // Usa a hora enviada pelo form (jÃ¡ em horÃ¡rio local do motorista); fallback = agora em BrasÃ­lia
     const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
 
+    // -------------------------------------------------------------------
+    // 2) Registrar saida efetiva
+    // -------------------------------------------------------------------
     const saidaPayload = { auth: authBody, idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida: dataSaidaBrudam };
 
     const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
@@ -127,6 +138,9 @@ export default async function handler(req, res) {
       });
     }
 
+    // -------------------------------------------------------------------
+    // 3) Enviar foto como ocorrencia (usa token do sistema)
+    // -------------------------------------------------------------------
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${systemToken}` },
