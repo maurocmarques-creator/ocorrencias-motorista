@@ -39,20 +39,22 @@ async function login(base) {
   return j.data.access_key;
 }
 
+// Obtém sessão web do Brudam (token uidbrd) para salvar no ANEXO do manifesto
+// Retorna { ok, uidbrd } ou { ok: false, reason, message }
 async function getWebSession(base) {
   const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-  console.error('[WS] webUser presente:', !!base.webUser, '| webPass presente:', !!base.webPass);
   if (!base.webUser || !base.webPass)
     return { ok: false, reason: 'env-vars-missing' };
   try {
+    // 1) Buscar CSRF token da página de login (User-Agent obrigatório — Brudam serve HTML diferente sem ele)
     const pageResp = await fetch(`${base.web}/`, { redirect: 'follow', headers: { 'User-Agent': UA } });
     const pageCookies = pageResp.headers.get('set-cookie') || '';
     const pageHtml = await pageResp.text();
     const tokenMatch = pageHtml.match(/name="token"[^>]*value="([^"]+)"/);
     const csrfToken = tokenMatch?.[1];
-    console.error('[WS] CSRF encontrado:', !!csrfToken);
     if (!csrfToken) return { ok: false, reason: 'csrf-not-found' };
 
+    // 2) Fazer login — retorna uidbrd em data.udata.uidbrd
     const loginHeaders = { 'Content-Type': 'application/json' };
     if (pageCookies) loginHeaders['Cookie'] = pageCookies;
     const loginResp = await fetch(`${base.web}/brd/sys/login/tms`, {
@@ -61,20 +63,17 @@ async function getWebSession(base) {
       body: JSON.stringify({ user: base.webUser, password: base.webPass, token: csrfToken })
     });
     const loginData = await loginResp.json().catch(() => ({}));
-    console.error('[WS] login status:', loginData.status, '| msg:', loginData.message);
     if (!loginData.status)
       return { ok: false, reason: 'login-failed', message: loginData.message };
     const uidbrd = loginData.data?.udata?.uidbrd;
-    console.error('[WS] uidbrd obtido:', !!uidbrd);
     if (!uidbrd) return { ok: false, reason: 'uidbrd-not-found' };
     return { ok: true, uidbrd };
-  } catch (e) {
-    console.error('[WS] exception:', e.message);
-    return { ok: false, reason: 'exception', message: e.message };
-  }
+  } catch (e) { return { ok: false, reason: 'exception', message: e.message }; }
 }
 
+// Salva foto no ANEXO do manifesto via PHP (2 etapas: S3 + gravaAnexo.php)
 async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoNome) {
+  // Etapa 1: Upload para S3 via endpoint autenticado por Bearer
   const s3Resp = await fetch(`${base.web}/brd/res/attachment/create`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}` },
@@ -92,11 +91,11 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
     })
   });
   const s3Data = await s3Resp.json();
-  console.error('[ANEXO] S3 status:', s3Data.status, '| msg:', s3Data.message);
   if (!s3Data.status) throw new Error('Upload S3 falhou: ' + s3Data.message);
   const s3Url = s3Data.data?.[0];
-  if (!s3Url) throw new Error('URL S3 nÃ£o retornada');
+  if (!s3Url) throw new Error('URL S3 não retornada');
 
+  // Etapa 2: Associar arquivo ao manifesto via gravaAnexo.php (sessão PHP)
   const boundary = `----Boundary${Date.now()}`;
   const body = `--${boundary}\r\nContent-Disposition: form-data; name="anexo"\r\n\r\n${s3Url}\r\n--${boundary}\r\nContent-Disposition: form-data; name="manifesto"\r\n\r\n${idMan}\r\n--${boundary}--`;
   const attachResp = await fetch(`${base.web}/operacional/ajax/gravaAnexo.php`, {
@@ -108,7 +107,6 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
     body
   });
   const attachData = await attachResp.json();
-  console.error('[ANEXO] gravaAnexo status:', attachData.status, '| msg:', attachData.message);
   if (!attachData.status) throw new Error('gravaAnexo falhou: ' + attachData.message);
   return { s3Url, anexos: attachData.anexos };
 }
@@ -116,22 +114,26 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'MÃ©todo nÃ£o permitido.' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
 
   const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente } = req.body || {};
 
   const b = BASES[base];
-  if (!b)         return res.status(400).json({ error: 'Base invÃ¡lida.' });
-  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatÃ³rio.' });
-  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatÃ³rio.' });
-  if (!dataSaida) return res.status(400).json({ error: 'dataSaida obrigatÃ³rio.' });
-  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodÃ´metro obrigatÃ³ria.' });
+  if (!b)         return res.status(400).json({ error: 'Base inválida.' });
+  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatório.' });
+  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatório.' });
+  if (!dataSaida) return res.status(400).json({ error: 'dataSaida obrigatório.' });
+  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
 
   try {
     const token = await login(b);
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    const headers = {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`
+    };
     const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
 
+    // 1) Registrar saída efetiva — tenta cada token estático até um funcionar
     let rSaida, jSaida;
     for (const tok of b.tokens) {
       rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
@@ -141,21 +143,22 @@ export default async function handler(req, res) {
       });
       jSaida = await rSaida.json().catch(() => ({}));
       if (rSaida.ok) break;
+      // Se o erro for de unidade não encontrada, tenta o próximo token
       const msg = (jSaida?.data?.message || jSaida?.message || '').toLowerCase();
-      if (!msg.includes('unidade')) break;
+      if (!msg.includes('unidade')) break; // outro erro — não adianta tentar outro token
     }
     if (!rSaida.ok) {
       return res.status(rSaida.status).json({
-        error:  jSaida?.data?.message || jSaida?.message || jSaida?.error || 'Erro ao registrar saÃ­da.',
+        error:  jSaida?.data?.message || jSaida?.message || jSaida?.error || 'Erro ao registrar saída.',
         detail: jSaida
       });
     }
 
+    // 2) Tentar salvar foto no ANEXO via sessão PHP
     let jAnexo = null;
     const sessionResult = await getWebSession(b);
-    console.error('[SAIDA] sessionResult:', JSON.stringify(sessionResult).substring(0, 120));
     if (!sessionResult.ok) {
-      jAnexo = { error: `SessÃ£o web nÃ£o obtida: ${sessionResult.reason}`, detail: sessionResult.message };
+      jAnexo = { error: `Sessão web não obtida: ${sessionResult.reason}`, detail: sessionResult.message };
     } else {
       try {
         jAnexo = await uploadAnexo(b, token, sessionResult.uidbrd, idMan, fotoDados, fotoNomeReal);
@@ -163,8 +166,8 @@ export default async function handler(req, res) {
         jAnexo = { error: e.message };
       }
     }
-    console.error('[SAIDA] jAnexo:', JSON.stringify(jAnexo).substring(0, 200));
 
+    // 3) Sempre salvar foto no tracking/ocorrências (registro de evento)
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method:  'POST',
       headers,
@@ -175,14 +178,22 @@ export default async function handler(req, res) {
           tipo:      'MANIFESTO',
           tipo_op:   'MANIFESTO',
           manifesto: Number(idMan),
-          eventos: [{ codigo: 1, data: dataSaida, obs: `HodÃ´metro saÃ­da â KM ${kmInicial}` }],
+          eventos: [{
+            codigo: 1,
+            data:   dataSaida,
+            obs:    `Hodômetro saída — KM ${kmInicial}`
+          }],
           anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
         }]
       })
     });
     const jFoto = await rFoto.json();
 
-    return res.status(200).json({ saida: { ok: true, data: jSaida }, foto: jFoto, anexo: jAnexo });
+    return res.status(200).json({
+      saida:  { ok: true, data: jSaida },
+      foto:   jFoto,
+      anexo:  jAnexo
+    });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
