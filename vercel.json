@@ -1,33 +1,12 @@
 {
   "version": 2,
   "routes": [
-    {
-      "src": "/api/minuta",
-      "dest": "/api/minuta.js"
-    },
-    {
-      "src": "/api/ocorrencia",
-      "dest": "/api/ocorrencia.js"
-    },
-    {
-      "src": "/api/manifesto-consulta",
-      "dest": "/api/manifesto-consulta.js"
-    },
-    {
-      "src": "/api/manifesto-saida",
-      "dest": "/api/manifesto-saida.js"
-    },
-    {
-      "src": "/api/manifesto-finalizar",
-      "dest": "/api/manifesto-finalizar.js"
-    },
-    {
-      "src": "/api/test-session",
-      "dest": "/api/test-session.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/api/minuta",               "dest": "/api/minuta.js" },
+    { "src": "/api/ocorrencia",           "dest": "/api/ocorrencia.js" },
+    { "src": "/api/manifesto-consulta",   "dest": "/api/manifesto-consulta.js" },
+    { "src": "/api/manifesto-saida",      "dest": "/api/manifesto-saida.js" },
+    { "src": "/api/manifesto-finalizar",  "dest": "/api/manifesto-finalizar.js" },
+    { "src": "/api/test-session",         "dest": "/api/test-session.js" },
+    { "src": "/(.*)",                     "dest": "/index.html" }
   ]
 }
