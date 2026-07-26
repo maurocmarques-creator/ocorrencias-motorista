@@ -48,6 +48,8 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${token}`
     };
 
+    const fotoNomeReal = fotoNome || `hodometro_chegada_${idMan}.jpg`;
+
     // 0) Pre-check: verificar minutas sem ocorrência no manifesto
     try {
       const rMan = await fetch(`${b.url}/operacional/consulta/manifesto/${idMan}`, {
@@ -76,7 +78,23 @@ export default async function handler(req, res) {
       }
     } catch (_) { /* se o pre-check falhar, prosseguir — o Brudam retornará erro próprio */ }
 
-    // 1) Enviar foto de chegada como ocorrência/anexo (antes de finalizar)
+    // 1) Adiciona foto no ANEXO do manifesto (antes de finalizar)
+    let jAnexo = {};
+    for (const tp of [1, 2, 3, 4, 5, 6, 'transf']) {
+      try {
+        const rAnexo = await fetch(`${b.url}/operacional/alteracao/manifesto/anexo`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ idMan: Number(idMan), tpMan: tp, arquivo: { nome: fotoNomeReal, dados: fotoDados } })
+        });
+        jAnexo = await rAnexo.json().catch(() => ({}));
+        const am = (jAnexo.data?.message || jAnexo.message || '').toLowerCase();
+        if (rAnexo.ok) break;
+        if (am.includes('tpman') || am.includes('deve conter')) continue;
+        break;
+      } catch (_) { break; }
+    }
+
+    // 2) Enviar foto de chegada como ocorrência de tracking
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method:  'POST',
       headers,
@@ -94,7 +112,7 @@ export default async function handler(req, res) {
           }],
           anexos: [{
             arquivo: {
-              nome:  fotoNome || `hodometro_chegada_${idMan}.jpg`,
+              nome:  fotoNomeReal,
               dados: fotoDados
             }
           }]
@@ -103,7 +121,7 @@ export default async function handler(req, res) {
     });
     const jFoto = await rFoto.json();
 
-    // 2) Finalizar manifesto (MDFe encerramento automático)
+    // 3) Finalizar manifesto (MDFe encerramento automático)
     const rFin = await fetch(`${b.url}/operacional/alteracao/manifesto/finalizarManifesto`, {
       method:  'POST',
       headers,
@@ -122,7 +140,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       finalizar: jFin,
-      foto:      jFoto
+      foto:      jFoto,
+      anexo:     jAnexo
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });
