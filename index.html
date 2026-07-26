@@ -862,12 +862,15 @@
           if (!isNaN(dtPrev)) {
             const prevFmt = `${p(dtPrev.getDate())}/${p(dtPrev.getMonth()+1)}/${dtPrev.getFullYear()} ${p(dtPrev.getHours())}:${p(dtPrev.getMinutes())}`;
             emissaoTxt.textContent = prevFmt;
-            avisoEl.style.display = 'block';
-            // Se a previsão de saída for no futuro, pré-preenche com ela; senão usa agora
             const now = new Date();
             if (dtPrev > now) {
+              // Previsão futura: mostra aviso e pré-preenche com ela (data mínima)
+              avisoEl.style.display = 'block';
               const minVal = `${dtPrev.getFullYear()}-${p(dtPrev.getMonth()+1)}-${p(dtPrev.getDate())}T${p(dtPrev.getHours())}:${p(dtPrev.getMinutes())}`;
               dataSaidaDefault = minVal;
+            } else {
+              // Previsão já passou: oculta aviso, usa hora atual
+              avisoEl.style.display = 'none';
             }
           }
         } catch(_) {}
