@@ -1,18 +1,27 @@
 const BASES = {
   porto: {
     url:     'https://azportoex.brudam.com.br/api/v1',
+    web:     'https://azportoex.brudam.com.br',
     usuario: '80f260dcd0a7764a0e1b32e4c6595730',
-    senha:   '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63'
+    senha:   '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63',
+    webUser: process.env.BRUDAM_PORTO_WEB_USER,
+    webPass: process.env.BRUDAM_PORTO_WEB_PASS
   },
   ptx: {
     url:     'https://ptxtransporte.brudam.com.br/api/v1',
+    web:     'https://ptxtransporte.brudam.com.br',
     usuario: 'b45831041f9926f61af06e982cd70e63',
-    senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537'
+    senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537',
+    webUser: process.env.BRUDAM_PTX_WEB_USER,
+    webPass: process.env.BRUDAM_PTX_WEB_PASS
   },
   pex: {
     url:     'https://pexlogistica.brudam.com.br/api/v1',
+    web:     'https://pexlogistica.brudam.com.br',
     usuario: '19657d11bf9e3384271a8e455631ee4e',
-    senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba'
+    senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba',
+    webUser: process.env.BRUDAM_PEX_WEB_USER,
+    webPass: process.env.BRUDAM_PEX_WEB_PASS
   }
 };
 
@@ -27,6 +36,77 @@ async function login(base) {
   return j.data.access_key;
 }
 
+// Obtém sessão PHP do Brudam web (para salvar no ANEXO do manifesto)
+async function getWebSession(base) {
+  if (!base.webUser || !base.webPass) return null;
+  try {
+    // 1) Buscar CSRF token da página de login
+    const pageResp = await fetch(`${base.web}/`, { redirect: 'follow' });
+    const pageHtml = await pageResp.text();
+    const tokenMatch = pageHtml.match(/name="token"[^>]*value="([^"]+)"/);
+    const csrfToken = tokenMatch?.[1];
+    if (!csrfToken) return null;
+    const setCookie = pageResp.headers.get('set-cookie') || '';
+    const preSession = setCookie.match(/PHPSESSID=([^;]+)/)?.[1] || '';
+
+    // 2) Fazer login com credenciais web
+    const loginResp = await fetch(`${base.web}/brd/sys/login/tms`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(preSession ? { 'Cookie': `PHPSESSID=${preSession}` } : {})
+      },
+      body: JSON.stringify({ user: base.webUser, password: base.webPass, token: csrfToken })
+    });
+    const loginData = await loginResp.json().catch(() => ({}));
+    if (!loginData.status) return null;
+
+    const loginCookie = loginResp.headers.get('set-cookie') || '';
+    const session = loginCookie.match(/PHPSESSID=([^;]+)/)?.[1] || preSession;
+    return session || null;
+  } catch (_) { return null; }
+}
+
+// Salva foto no ANEXO do manifesto via PHP (2 etapas: S3 + gravaAnexo.php)
+async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoNome) {
+  // Etapa 1: Upload para S3 via endpoint autenticado por Bearer
+  const s3Resp = await fetch(`${base.web}/brd/res/attachment/create`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}` },
+    body: JSON.stringify({
+      files: [{
+        name:       fotoNome,
+        size:       Math.ceil(fotoDados.length * 0.75),
+        type:       'image/jpeg',
+        entityId:   Number(idMan),
+        entityType: 11,
+        attachType: 29,
+        data:       fotoDados,
+        agente:     false
+      }]
+    })
+  });
+  const s3Data = await s3Resp.json();
+  if (!s3Data.status) throw new Error('Upload S3 falhou: ' + s3Data.message);
+  const s3Url = s3Data.data?.[0];
+  if (!s3Url) throw new Error('URL S3 não retornada');
+
+  // Etapa 2: Associar arquivo ao manifesto via gravaAnexo.php (sessão PHP)
+  const boundary = `----Boundary${Date.now()}`;
+  const body = `--${boundary}\r\nContent-Disposition: form-data; name="anexo"\r\n\r\n${s3Url}\r\n--${boundary}\r\nContent-Disposition: form-data; name="manifesto"\r\n\r\n${idMan}\r\n--${boundary}--`;
+  const attachResp = await fetch(`${base.web}/operacional/ajax/gravaAnexo.php`, {
+    method:  'POST',
+    headers: {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Cookie':       `PHPSESSID=${phpsessid}`
+    },
+    body
+  });
+  const attachData = await attachResp.json();
+  if (!attachData.status) throw new Error('gravaAnexo falhou: ' + attachData.message);
+  return { s3Url, anexos: attachData.anexos };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -35,11 +115,11 @@ export default async function handler(req, res) {
   const { base, idMan, kmFinal, dataChegada, fotoNome, fotoDados, cliente } = req.body || {};
 
   const b = BASES[base];
-  if (!b)          return res.status(400).json({ error: 'Base inválida.' });
-  if (!idMan)      return res.status(400).json({ error: 'idMan obrigatório.' });
-  if (!kmFinal)    return res.status(400).json({ error: 'kmFinal obrigatório.' });
+  if (!b)           return res.status(400).json({ error: 'Base inválida.' });
+  if (!idMan)       return res.status(400).json({ error: 'idMan obrigatório.' });
+  if (!kmFinal)     return res.status(400).json({ error: 'kmFinal obrigatório.' });
   if (!dataChegada) return res.status(400).json({ error: 'dataChegada obrigatório.' });
-  if (!fotoDados)  return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
+  if (!fotoDados)   return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
 
   try {
     const token = await login(b);
@@ -47,10 +127,9 @@ export default async function handler(req, res) {
       'Content-Type':  'application/json',
       'Authorization': `Bearer ${token}`
     };
-
     const fotoNomeReal = fotoNome || `hodometro_chegada_${idMan}.jpg`;
 
-    // 0) Pre-check: verificar minutas sem ocorrência no manifesto
+    // 0) Pre-check: minutas sem ocorrência
     try {
       const rMan = await fetch(`${b.url}/operacional/consulta/manifesto/${idMan}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -58,7 +137,6 @@ export default async function handler(req, res) {
       if (rMan.ok) {
         const jMan = await rMan.json();
         const d = jMan?.data || {};
-        // Tenta vários nomes possíveis para a lista de documentos
         const docs = d.documentos || d.notas || d.notas_fiscais || d.ctes || d.romaneios || [];
         if (Array.isArray(docs) && docs.length > 0) {
           const semOcorrencia = docs.filter(doc => {
@@ -70,58 +148,48 @@ export default async function handler(req, res) {
               .map(doc => doc.minuta || doc.documento || doc.numero || doc.cte || doc.id)
               .filter(Boolean);
             return res.status(422).json({
-              error: `${semOcorrencia.length} minuta(s) sem ocorrência de entrega ou pendência. Registre uma ocorrência antes de finalizar.`,
+              error: `${semOcorrencia.length} minuta(s) sem ocorrência. Registre antes de finalizar.`,
               minutas_pendentes: nums
             });
           }
         }
       }
-    } catch (_) { /* se o pre-check falhar, prosseguir — o Brudam retornará erro próprio */ }
+    } catch (_) { /* prosseguir se pre-check falhar */ }
 
-    // 1) Adiciona foto no ANEXO do manifesto (antes de finalizar)
-    let jAnexo = {};
-    for (const tp of [1, 2, 3, 4, 5, 6, 'transf']) {
+    // 1) Tentar salvar foto no ANEXO via sessão PHP
+    let jAnexo = null;
+    const phpsessid = await getWebSession(b);
+    if (phpsessid) {
       try {
-        const rAnexo = await fetch(`${b.url}/operacional/alteracao/manifesto/anexo`, {
-          method: 'POST', headers,
-          body: JSON.stringify({ idMan: Number(idMan), tpMan: tp, arquivo: { nome: fotoNomeReal, dados: fotoDados } })
-        });
-        jAnexo = await rAnexo.json().catch(() => ({}));
-        const am = (jAnexo.data?.message || jAnexo.message || '').toLowerCase();
-        if (rAnexo.ok) break;
-        if (am.includes('tpman') || am.includes('deve conter')) continue;
-        break;
-      } catch (_) { break; }
+        jAnexo = await uploadAnexo(b, token, phpsessid, idMan, fotoDados, fotoNomeReal);
+      } catch (e) {
+        jAnexo = { error: e.message };
+      }
     }
 
-    // 2) Enviar foto de chegada como ocorrência de tracking
+    // 2) Salvar foto no tracking/ocorrências (registro de evento)
     const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
       method:  'POST',
       headers,
       body: JSON.stringify({
         auth: { usuario: b.usuario, senha: b.senha },
         documentos: [{
-          cliente:  cliente || '',
-          tipo:     'MANIFESTO',
-          tipo_op:  'MANIFESTO',
+          cliente:   cliente || '',
+          tipo:      'MANIFESTO',
+          tipo_op:   'MANIFESTO',
           manifesto: Number(idMan),
           eventos: [{
             codigo: 1,
             data:   dataChegada,
             obs:    `Hodômetro chegada — KM ${kmFinal}`
           }],
-          anexos: [{
-            arquivo: {
-              nome:  fotoNomeReal,
-              dados: fotoDados
-            }
-          }]
+          anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
         }]
       })
     });
     const jFoto = await rFoto.json();
 
-    // 3) Finalizar manifesto (MDFe encerramento automático)
+    // 3) Finalizar manifesto
     const rFin = await fetch(`${b.url}/operacional/alteracao/manifesto/finalizarManifesto`, {
       method:  'POST',
       headers,
