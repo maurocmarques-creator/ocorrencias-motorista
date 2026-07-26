@@ -21,6 +21,8 @@ function nowBrudam() {
   return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 async function login(url, usuario, senha) {
   const r = await fetch(`${url}/acesso/auth/login`, {
     method: 'POST',
@@ -63,9 +65,12 @@ export default async function handler(req, res) {
         personalToken = await login(b.url, attempt.u, attempt.s);
         loginMethod   = attempt.label;
         break;
-      } catch (_) {}
+      } catch (_) {
+        await sleep(400); // respeita limite de 3 req/s do Brudam
+      }
     }
 
+    await sleep(400);
     const systemToken = await login(b.url, b.usuario, b.senha);
     const token       = personalToken || systemToken;
 
