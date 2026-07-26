@@ -1,212 +1,193 @@
 const BASES = {
   porto: {
     url:     'https://azportoex.brudam.com.br/api/v1',
+    web:     'https://azportoex.brudam.com.br',
     usuario: '80f260dcd0a7764a0e1b32e4c6595730',
     senha:   '74bd7c5a2b5c62de4e333264dd69e2a46f4b7f4e3ebfb4adf91ad56972622d63',
-    tokens: [
-      '1308e5c7e08678a69977454eee14598a0e0c6b16b094d9b4df', // MATRIZ
-      '07e0ee0a7b679edad721e952ae940c8aad72cb8f8cb26c2088'  // FILIAL SP
-    ]
+    webUser: process.env.BRUDAM_PORTO_WEB_USER,
+    webPass: process.env.BRUDAM_PORTO_WEB_PASS
   },
   ptx: {
     url:     'https://ptxtransporte.brudam.com.br/api/v1',
+    web:     'https://ptxtransporte.brudam.com.br',
     usuario: 'b45831041f9926f61af06e982cd70e63',
     senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537',
-    tokens: [
-      '76ab1df4a1ccad39a60280122522032ff4d1872a06b4f5e9ca'  // MATRIZ
-    ]
+    webUser: process.env.BRUDAM_PTX_WEB_USER,
+    webPass: process.env.BRUDAM_PTX_WEB_PASS
   },
   pex: {
     url:     'https://pexlogistica.brudam.com.br/api/v1',
+    web:     'https://pexlogistica.brudam.com.br',
     usuario: '19657d11bf9e3384271a8e455631ee4e',
     senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba',
-    tokens: [
-      '433959304b9584587a0427b6c605d33978f0a62572f37a2836'  // MATRIZ
-    ]
+    webUser: process.env.BRUDAM_PEX_WEB_USER,
+    webPass: process.env.BRUDAM_PEX_WEB_PASS
   }
 };
 
-function nowBrudam() {
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  const pad = n => String(n).padStart(2, '0');
-  return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-}
-
-function isoToBrudam(s) {
-  if (!s) return null;
-  const [datePart, timePart] = s.split(' ');
-  if (!datePart || !timePart) return null;
-  const [y, m, d] = datePart.split('-');
-  return `${d}/${m}/${y} ${timePart}`;
-}
-
-async function login(url, usuario, senha) {
-  const r = await fetch(`${url}/acesso/auth/login`, {
-    method: 'POST',
+async function login(base) {
+  const r = await fetch(`${base.url}/acesso/auth/login`, {
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ usuario, senha })
+    body:    JSON.stringify({ usuario: base.usuario, senha: base.senha })
   });
   const j = await r.json();
-  if (!j.data?.access_key) throw new Error(j.message || j.error || 'Falha no login');
+  if (!j.data?.access_key) throw new Error('Falha no login: ' + j.message);
   return j.data.access_key;
 }
 
-// Etapa 1: Atualiza a previsão de saída no Brudam (necessário quando prev_saida está no passado)
-async function tryUpdatePrevSaida(baseUrl, token, idMan, dataSaida, tpMan) {
-  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-  // Tenta os tipos de manifesto mais comuns em sequência
-  const tpManList = tpMan ? [tpMan] : [1, 2, 3, 4, 5, 6, 'transf'];
-  for (const tp of tpManList) {
-    try {
-      const r = await fetch(`${baseUrl}/operacional/alteracao/manifesto/previsaoSaida`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ idMan: Number(idMan), previsaoSaida: dataSaida, tpMan: tp })
-      });
-      const j = await r.json().catch(() => ({}));
-      const msg = (j.data?.message || j.message || j.error || '').toLowerCase();
-      if (r.ok) return { ok: true, tpMan: tp, msg: '' };
-      // Se erro é sobre tpMan inválido, tenta o próximo
-      if (msg.includes('tpman') || msg.includes('deve conter')) continue;
-      // Qualquer outro erro (inclui "não pode ser modificado"): para de tentar
-      return { ok: false, tpMan: tp, msg: j.data?.message || j.message || msg };
-    } catch (_) {
-      return { ok: false, tpMan: null, msg: 'network error' };
-    }
-  }
-  return { ok: false, tpMan: null, msg: 'tpMan nao reconhecido' };
+// Obtém sessão PHP do Brudam web (para salvar no ANEXO do manifesto)
+async function getWebSession(base) {
+  if (!base.webUser || !base.webPass) return null;
+  try {
+    // 1) Buscar CSRF token da página de login
+    const pageResp = await fetch(`${base.web}/`, { redirect: 'follow' });
+    const pageHtml = await pageResp.text();
+    const tokenMatch = pageHtml.match(/name="token"[^>]*value="([^"]+)"/);
+    const csrfToken = tokenMatch?.[1];
+    if (!csrfToken) return null;
+    // Capturar cookie de pré-sessão
+    const setCookie = pageResp.headers.get('set-cookie') || '';
+    const preSession = setCookie.match(/PHPSESSID=([^;]+)/)?.[1] || '';
+
+    // 2) Fazer login com credenciais web
+    const loginResp = await fetch(`${base.web}/brd/sys/login/tms`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(preSession ? { 'Cookie': `PHPSESSID=${preSession}` } : {})
+      },
+      body: JSON.stringify({ user: base.webUser, password: base.webPass, token: csrfToken })
+    });
+    const loginData = await loginResp.json().catch(() => ({}));
+    if (!loginData.status) return null;
+
+    // Extrair sessão autenticada do header Set-Cookie
+    const loginCookie = loginResp.headers.get('set-cookie') || '';
+    const session = loginCookie.match(/PHPSESSID=([^;]+)/)?.[1] || preSession;
+    return session || null;
+  } catch (_) { return null; }
 }
 
-// Etapa 2: Registra a saída efetiva
-async function trySaida(baseUrl, token, idMan, kmInicial, dataSaida) {
-  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-  const r = await fetch(`${baseUrl}/operacional/alteracao/manifesto/saidaEfetiva`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida })
+// Salva foto no ANEXO do manifesto via PHP (2 etapas: S3 + gravaAnexo.php)
+async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoNome) {
+  // Etapa 1: Upload para S3 via endpoint autenticado por Bearer
+  const s3Resp = await fetch(`${base.web}/brd/res/attachment/create`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}` },
+    body: JSON.stringify({
+      files: [{
+        name:       fotoNome,
+        size:       Math.ceil(fotoDados.length * 0.75),
+        type:       'image/jpeg',
+        entityId:   Number(idMan),
+        entityType: 11,
+        attachType: 29,
+        data:       fotoDados,
+        agente:     false
+      }]
+    })
   });
-  const j = await r.json().catch(() => ({}));
-  const msg = j.data?.message || j.message || j.error || '';
-  return { ok: r.ok, status: r.status, msg, json: j, headers };
+  const s3Data = await s3Resp.json();
+  if (!s3Data.status) throw new Error('Upload S3 falhou: ' + s3Data.message);
+  const s3Url = s3Data.data?.[0];
+  if (!s3Url) throw new Error('URL S3 não retornada');
+
+  // Etapa 2: Associar arquivo ao manifesto via gravaAnexo.php (sessão PHP)
+  const boundary = `----Boundary${Date.now()}`;
+  const body = `--${boundary}\r\nContent-Disposition: form-data; name="anexo"\r\n\r\n${s3Url}\r\n--${boundary}\r\nContent-Disposition: form-data; name="manifesto"\r\n\r\n${idMan}\r\n--${boundary}--`;
+  const attachResp = await fetch(`${base.web}/operacional/ajax/gravaAnexo.php`, {
+    method:  'POST',
+    headers: {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Cookie':       `PHPSESSID=${phpsessid}`
+    },
+    body
+  });
+  const attachData = await attachResp.json();
+  if (!attachData.status) throw new Error('gravaAnexo falhou: ' + attachData.message);
+  return { s3Url, anexos: attachData.anexos };
 }
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo nao permitido.' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
 
-  const { base, idMan, kmInicial, dataSaida, tpMan, fotoNome, fotoDados, cliente } = req.body || {};
+  const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente } = req.body || {};
 
-  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatorio.' });
-  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatorio.' });
-  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodometro obrigatoria.' });
-
-  const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
-  const baseOrder = base && BASES[base]
-    ? [base, ...Object.keys(BASES).filter(k => k !== base)]
-    : Object.keys(BASES);
+  const b = BASES[base];
+  if (!b)         return res.status(400).json({ error: 'Base inválida.' });
+  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatório.' });
+  if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatório.' });
+  if (!dataSaida) return res.status(400).json({ error: 'dataSaida obrigatório.' });
+  if (!fotoDados) return res.status(400).json({ error: 'Foto do hodômetro obrigatória.' });
 
   try {
-    for (const baseKey of baseOrder) {
-      const b = BASES[baseKey];
+    const token = await login(b);
+    const headers = {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+    const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
 
-      // Tokens estˡticos + login como fallback
-      const tokenList = [];
-      if (b.tokens?.length) {
-        tokenList.push(...b.tokens.map(t => ({ token: t, source: 'static' })));
-      }
+    // 1) Registrar saída efetiva
+    const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        auth:         { usuario: b.usuario, senha: b.senha },
+        id_manifesto: Number(idMan),
+        km_inicial:   Number(kmInicial),
+        data_saida:   dataSaida
+      })
+    });
+    const jSaida = await rSaida.json().catch(() => ({}));
+    if (!rSaida.ok) {
+      return res.status(rSaida.status).json({
+        error:  jSaida.message || jSaida.error || 'Erro ao registrar saída.',
+        detail: jSaida
+      });
+    }
+
+    // 2) Tentar salvar foto no ANEXO via sessão PHP
+    let jAnexo = null;
+    const phpsessid = await getWebSession(b);
+    if (phpsessid) {
       try {
-        const loginToken = await login(b.url, b.usuario, b.senha);
-        tokenList.push({ token: loginToken, source: 'login' });
-      } catch (_) {}
-
-      for (const { token, source } of tokenList) {
-        // --- Etapa 1: Atualiza previsão de saída ---
-        const prevResult = await tryUpdatePrevSaida(b.url, token, idMan, dataSaidaBrudam, tpMan);
-        // Se falhou por auth (unidade/token), este token não serve — tenta próximo
-        if (!prevResult.ok) {
-          const pm = prevResult.msg.toLowerCase();
-          if (pm.includes('unidade') || pm.includes('token') || pm.includes('nao encontrado') || pm.includes('não encontrado')) {
-            continue;
-          }
-          // "Não pode ser modificado" ou outro erro de negócio: continua mesmo assim
-          // (prev_saida pode já estar OK, ou erro não impede saidaEfetiva)
-        }
-
-        const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-        const fotoNomeReal = fotoNome || `hodometro_saida_${idMan}.jpg`;
-
-        // --- Etapa 2: Adiciona foto no ANEXO (antes da saída — manifesto ainda Fechado) ---
-        let jAnexo = {};
-        const tpManList2 = tpMan ? [tpMan] : [1, 2, 3, 4, 5, 6, 'transf'];
-        for (const tp of tpManList2) {
-          try {
-            const rAnexo = await fetch(`${b.url}/operacional/alteracao/manifesto/anexo`, {
-              method: 'POST', headers: authHeaders,
-              body: JSON.stringify({ idMan: Number(idMan), tpMan: tp, arquivo: { nome: fotoNomeReal, dados: fotoDados } })
-            });
-            jAnexo = await rAnexo.json().catch(() => ({}));
-            const am = (jAnexo.data?.message || jAnexo.message || '').toLowerCase();
-            if (rAnexo.ok) break;
-            if (am.includes('tpman') || am.includes('deve conter')) continue;
-            break;
-          } catch (_) { break; }
-        }
-
-        // --- Etapa 3: Registra saída efetiva ---
-        const result = await trySaida(b.url, token, idMan, kmInicial, dataSaidaBrudam);
-        const msgLow = result.msg.toLowerCase();
-
-        if (result.ok) {
-          // Etapa 4: Registra ocorrência de tracking com foto
-          const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
-            method: 'POST',
-            headers: authHeaders,
-            body: JSON.stringify({
-              auth: { usuario: b.usuario, senha: b.senha },
-              documentos: [{
-                cliente: cliente || '',
-                tipo: 'MANIFESTO', tipo_op: 'MANIFESTO',
-                manifesto: Number(idMan),
-                eventos: [{ codigo: 1, data: dataSaidaBrudam, obs: `Hodometro saida - KM ${kmInicial}` }],
-                anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
-              }]
-            })
-          });
-          const jFoto = await rFoto.json().catch(() => ({}));
-
-          return res.status(200).json({
-            saida: { ok: true, data: result.json },
-            foto: jFoto,
-            anexo: jAnexo,
-            timestamp: dataSaidaBrudam,
-            baseUsada: baseKey,
-            tokenSource: source,
-            prevSaidaAtualizada: prevResult.ok
-          });
-        }
-
-        // Manifesto não encontrado neste token/base → tenta próximo
-        if (msgLow.includes('nao encontrado') || msgLow.includes('não encontrado') ||
-            msgLow.includes('unidade') || msgLow.includes('token')) {
-          continue;
-        }
-
-        // Outro erro de negócio → retorna direto ao usuário
-        return res.status(400).json({
-          error: result.msg || 'Erro ao registrar saida.',
-          dataSaidaEnviada: dataSaidaBrudam,
-          baseUsada: baseKey,
-          prevSaidaAtualizada: prevResult.ok,
-          prevSaidaErro: prevResult.ok ? null : prevResult.msg
-        });
+        jAnexo = await uploadAnexo(b, token, phpsessid, idMan, fotoDados, fotoNomeReal);
+      } catch (e) {
+        jAnexo = { error: e.message };
       }
     }
 
-    return res.status(400).json({
-      error: 'Manifesto nao encontrado em nenhuma base.',
-      dataSaidaEnviada: dataSaidaBrudam
+    // 3) Sempre salvar foto no tracking/ocorrências (registro de evento)
+    const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
+      method:  'POST',
+      headers,
+      body: JSON.stringify({
+        auth: { usuario: b.usuario, senha: b.senha },
+        documentos: [{
+          cliente:   cliente || '',
+          tipo:      'MANIFESTO',
+          tipo_op:   'MANIFESTO',
+          manifesto: Number(idMan),
+          eventos: [{
+            codigo: 1,
+            data:   dataSaida,
+            obs:    `Hodômetro saída — KM ${kmInicial}`
+          }],
+          anexos: [{ arquivo: { nome: fotoNomeReal, dados: fotoDados } }]
+        }]
+      })
     });
+    const jFoto = await rFoto.json();
 
+    return res.status(200).json({
+      saida:  { ok: true, data: jSaida },
+      foto:   jFoto,
+      anexo:  jAnexo
+    });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
