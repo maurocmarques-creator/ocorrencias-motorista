@@ -29,6 +29,23 @@ async function login(url, usuario, senha) {
   return j.data.access_key;
 }
 
+// Testa uma variante específica de auth para saidaEfetiva
+async function trySaidaVariant(baseUrl, token, idMan, kmInicial, dataSaida, authBody) {
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  const payload = { idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaida };
+  if (authBody !== undefined) payload.auth = authBody;
+
+  const r = await fetch(`${baseUrl}/operacional/alteracao/manifesto/saidaEfetiva`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+  const text = await r.text();
+  let j = {};
+  try { j = JSON.parse(text); } catch {}
+  const msg = j.data?.message || j.message || j.error || text.slice(0, 200);
+  return { ok: r.ok, status: r.status, msg, json: j, headers };
+}
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -36,65 +53,86 @@ export default async function handler(req, res) {
 
   const { base, idMan, kmInicial, dataSaida, fotoNome, fotoDados, cliente } = req.body || {};
 
-  const b = BASES[base];
-  if (!b) return res.status(400).json({ error: 'Base invalida.' });
-  if (!idMan) return res.status(400).json({ error: 'idMan obrigatorio.' });
+  if (!idMan)     return res.status(400).json({ error: 'idMan obrigatorio.' });
   if (!kmInicial) return res.status(400).json({ error: 'kmInicial obrigatorio.' });
   if (!fotoDados) return res.status(400).json({ error: 'Foto do hodometro obrigatoria.' });
 
+  const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
+
+  const baseOrder = base && BASES[base]
+    ? [base, ...Object.keys(BASES).filter(k => k !== base)]
+    : Object.keys(BASES);
+
+  const allAttempts = [];
+
   try {
-    const token = await login(b.url, b.usuario, b.senha);
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-    const dataSaidaBrudam = isoToBrudam(dataSaida) || nowBrudam();
+    for (const baseKey of baseOrder) {
+      const b = BASES[baseKey];
+      let token;
+      try {
+        token = await login(b.url, b.usuario, b.senha);
+      } catch (e) {
+        allAttempts.push({ base: baseKey, loginError: e.message });
+        continue;
+      }
 
-    const rSaida = await fetch(`${b.url}/operacional/alteracao/manifesto/saidaEfetiva`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        auth: { usuario: b.usuario, senha: b.senha },
-        idMan: Number(idMan),
-        kmInicial: Number(kmInicial),
-        dataSaida: dataSaidaBrudam
-      })
-    });
+      // Variantes de auth a testar em ordem
+      const authVariants = [
+        { label: 'sistema_hash',   body: { usuario: b.usuario, senha: b.senha } },
+        { label: 'sem_auth',       body: undefined },
+        { label: 'MCM_plain',      body: { usuario: 'MCM', senha: 'Portoex18' } },
+        { label: 'mcm_lower',      body: { usuario: 'mcm', senha: 'Portoex18' } },
+        { label: 'mcm_md5_sha256', body: { usuario: '5b843ed5160086c2d34710c0ef6a1da6', senha: 'ecf6387852f87cb5b2327b541fb7c933e2dd42d17d34e9947a0ad2cedefc42cb' } },
+      ];
 
-    let jSaida = {};
-    const saidaText = await rSaida.text();
-    try { jSaida = JSON.parse(saidaText); } catch {}
+      for (const variant of authVariants) {
+        const result = await trySaidaVariant(b.url, token, idMan, kmInicial, dataSaidaBrudam, variant.body);
+        allAttempts.push({ base: baseKey, auth: variant.label, ok: result.ok, status: result.status, msg: result.msg });
 
-    if (!rSaida.ok) {
-      const errMsg = jSaida.data?.message || jSaida.message || jSaida.error || 'Erro ao registrar saida.';
-      return res.status(rSaida.status).json({
-        error: errMsg,
-        detail: jSaida,
-        debug: { idMan: Number(idMan), kmInicial: Number(kmInicial), dataSaidaEnviada: dataSaidaBrudam, base }
-      });
+        if (result.ok) {
+          // SUCESSO — envia foto
+          const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
+            method: 'POST',
+            headers: result.headers,
+            body: JSON.stringify({
+              auth: { usuario: b.usuario, senha: b.senha },
+              documentos: [{
+                cliente: cliente || '',
+                tipo: 'MANIFESTO',
+                tipo_op: 'MANIFESTO',
+                manifesto: Number(idMan),
+                eventos: [{ codigo: 1, data: dataSaidaBrudam, obs: `Hodometro saida - KM ${kmInicial}` }],
+                anexos: [{ arquivo: { nome: fotoNome || `hodometro_saida_${idMan}.jpg`, dados: fotoDados } }]
+              }]
+            })
+          });
+          const jFoto = await rFoto.json().catch(() => ({}));
+          return res.status(200).json({
+            saida: { ok: true, data: result.json },
+            foto: jFoto,
+            timestamp: dataSaidaBrudam,
+            baseUsada: baseKey,
+            authUsada: variant.label
+          });
+        }
+
+        // Se a mensagem mudou (não é mais "unidade/token"), parar nas variantes —
+        // é um erro diferente (ex: data inválida, manifesto não encontrado)
+        const msg = result.msg.toLowerCase();
+        if (!msg.includes('unidade') && !msg.includes('token') && !msg.includes('nao encontrado') && !msg.includes('não encontrado')) {
+          break; // Esse base+auth chegou mais longe; erros restantes são de outro tipo
+        }
+      }
     }
 
-    const rFoto = await fetch(`${b.url}/tracking/ocorrencias`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        auth: { usuario: b.usuario, senha: b.senha },
-        documentos: [{
-          cliente: cliente || '',
-          tipo: 'MANIFESTO',
-          tipo_op: 'MANIFESTO',
-          manifesto: Number(idMan),
-          eventos: [{ codigo: 1, data: dataSaidaBrudam, obs: `Hodometro saida - KM ${kmInicial}` }],
-          anexos: [{ arquivo: { nome: fotoNome || `hodometro_saida_${idMan}.jpg`, dados: fotoDados } }]
-        }]
-      })
-    });
-    const jFoto = await rFoto.json().catch(() => ({}));
-
-    return res.status(200).json({
-      saida: { ok: true, data: jSaida },
-      foto: jFoto,
-      timestamp: dataSaidaBrudam
+    // Nenhuma combinação funcionou ℔ retorna diagnóstico completo
+    return res.status(400).json({
+      error: 'Saida nao registrada. Veja attempts para diagnostico.',
+      dataSaidaEnviada: dataSaidaBrudam,
+      attempts: allAttempts
     });
 
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e.message, attempts: allAttempts });
   }
 }
