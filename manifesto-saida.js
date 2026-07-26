@@ -12,11 +12,18 @@ const BASES = {
   ptx: {
     url:     'https://ptxtransporte.brudam.com.br/api/v1',
     usuario: 'b45831041f9926f61af06e982cd70e63',
-    senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537'
+    senha:   '55f13643587f0f9762df795d7cd1f81ef13faec2f789abac62fb77f7a3df1537',
+    tokens: [
+      '76ab1df4a1ccad39a60280122522032ff4d1872a06b4f5e9ca'  // MATRIZ
+    ]
   },
-  pex: https://pexlogistica.brudam.com.br/api/v1',
+  pex: {
+    url:     'https://pexlogistica.brudam.com.br/api/v1',
     usuario: '19657d11bf9e3384271a8e455631ee4e',
-    senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba'
+    senha:   '7546b7457a2c0f2efb39524eb00fa5e858f3b4d8b03ecbf182687e8b4a93a5ba',
+    tokens: [
+      '433959304b9584587a0427b6c605d33978f0a62572f37a2836'  // MATRIZ
+    ]
   }
 };
 
@@ -34,7 +41,7 @@ function isoToBrudam(s) {
   return `${d}/${m}/${y} ${timePart}`;
 }
 
-alogin(url, usuario, senha) {
+async function login(url, usuario, senha) {
   const r = await fetch(`${url}/acesso/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -120,7 +127,7 @@ export default async function handler(req, res) {
           });
         }
 
-        // Manifesto nóo encontrado nesse token/base → tenta próximo
+        // Manifesto não encontrado nesse token/base → tenta próximo
         if (msgLow.includes('nao encontrado') || msgLow.includes('não encontrado') ||
             msgLow.includes('unidade') || msgLow.includes('token')) {
           continue;
