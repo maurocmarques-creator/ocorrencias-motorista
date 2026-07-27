@@ -103,7 +103,12 @@ export default async function handler(req, res) {
       try {
         const s3Resp = await fetch(`${b.web}/brd/res/attachment/create`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}`, 'User-Agent': UA },
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${bearerToken}`,
+            'Cookie':        `uidbrd=${uidbrd}`,
+            'User-Agent':    UA
+          },
           body: JSON.stringify({
             files: [{
               name:       'teste_anexo.jpg',
