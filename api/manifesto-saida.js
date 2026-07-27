@@ -73,10 +73,16 @@ async function getWebSession(base) {
 
 // Salva foto no ANEXO do manifesto via PHP (2 etapas: S3 + gravaAnexo.php)
 async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoNome) {
-  // Etapa 1: Upload para S3 via endpoint autenticado por Bearer
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+  // Etapa 1: Upload para S3 — autenticado pela sessão web (uidbrd cookie)
   const s3Resp = await fetch(`${base.web}/brd/res/attachment/create`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}` },
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${bearerToken}`,
+      'Cookie':        `uidbrd=${phpsessid}`,
+      'User-Agent':    UA
+    },
     body: JSON.stringify({
       files: [{
         name:       fotoNome,
@@ -102,7 +108,8 @@ async function uploadAnexo(base, bearerToken, phpsessid, idMan, fotoDados, fotoN
     method:  'POST',
     headers: {
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
-      'Cookie':       `uidbrd=${phpsessid}`
+      'Cookie':       `uidbrd=${phpsessid}`,
+      'User-Agent':   UA
     },
     body
   });
