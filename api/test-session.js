@@ -103,7 +103,7 @@ export default async function handler(req, res) {
       try {
         const s3Resp = await fetch(`${b.web}/brd/res/attachment/create`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${bearerToken}`, 'User-Agent': UA },
           body: JSON.stringify({
             files: [{
               name:       'teste_anexo.jpg',
@@ -117,8 +117,16 @@ export default async function handler(req, res) {
             }]
           })
         });
-        const s3Data = await s3Resp.json().catch(() => ({}));
-        result.s3 = { status: s3Resp.status, ok: s3Data.status, message: s3Data.message, data: s3Data.data };
+        const s3RawText = await s3Resp.text();
+        let s3Data = {};
+        try { s3Data = JSON.parse(s3RawText); } catch(_) {}
+        result.s3 = {
+          httpStatus: s3Resp.status,
+          ok:         s3Data.status,
+          message:    s3Data.message,
+          data:       s3Data.data,
+          rawPrimeiros200: s3RawText.substring(0, 200)
+        };
 
         // Etapa gravaAnexo (só se S3 ok)
         if (s3Data.status && s3Data.data?.[0]) {
