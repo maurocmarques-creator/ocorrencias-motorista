@@ -76,12 +76,10 @@ export default async function handler(req, res) {
     // Obs livre
     if (obs) evento.obs = obs;
 
-    // Dados do recebedor (entrega realizada) — campos dedicados da API Brudam
+    // Dados do recebedor (entrega realizada) — campos dedicados da API
     if (nome_recebedor || doc_recebedor) {
-      evento.recebedor = {
-        nome:      nome_recebedor || '',
-        documento: doc_recebedor  || ''
-      };
+      evento.recebedor = { nome: nome_recebedor || '' };
+      if (doc_recebedor) evento.recebedor.documento = doc_recebedor;  // só envia se preenchido
       if (grau_parentesco) evento.recebedor.grau = grau_parentesco;
     }
 
@@ -92,7 +90,7 @@ export default async function handler(req, res) {
       eventos: [evento]
     };
 
-    // CNPJ do destinatário (obrigatório pela API)
+    // CNPJ do destinatário (obrigatório pela API quando tipo != MANIFESTO/DESPACHO)
     if (cnpj) documento.cliente = cnpj;
 
     // Anexa foto se for ocorrência 1 (entrega realizada)
