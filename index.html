@@ -636,10 +636,14 @@
   function onFotoChange() {
     const file = document.getElementById('foto-input').files[0];
     if (!file) return;
-    fotoNome = file.name;
     const reader = new FileReader();
     reader.onload = e => {
-      fotoB64 = e.target.result.split(',')[1];
+      const dataUrl = e.target.result;
+      fotoB64 = dataUrl.split(',')[1];
+      // Detecta o tipo real do arquivo (iOS converte HEIC → JPEG mas o file.name pode continuar .heic)
+      const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+      const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+      fotoNome = `foto_comprovante_${Date.now()}.${ext}`;
       const prev = document.getElementById('foto-preview');
       prev.src = e.target.result;
       prev.style.display = 'block';
@@ -675,7 +679,8 @@
       const dataEnt  = document.getElementById('data-entrega').value;
       const horaEnt  = document.getElementById('hora-entrega').value;
       nomeRecebedor  = document.getElementById('nome-recebedor').value.trim();
-      docRecebedor   = document.getElementById('doc-recebedor').value.trim();
+      // Remove formatação (pontos, traços, espaços) — iOS autocomplete pode inserir CPF formatado
+      docRecebedor   = document.getElementById('doc-recebedor').value.replace(/\D/g, '') || null;
 
       if (!dataEnt)       return showErr(err, 'Informe a data da entrega.');
       if (!horaEnt)       return showErr(err, 'Informe a hora da entrega.');
