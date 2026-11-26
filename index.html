@@ -850,6 +850,15 @@
           const digits = raw.replace(/\D/g,'');
           const km = digits.match(/(\d{44})/);
           if (km) _dacteBase = CNPJ_BASE_MAP[km[1].substring(6,14)] || null;
+          if (_dacteBase && !window._dacteAutoClose) {
+            window._dacteAutoClose = setTimeout(() => {
+              if (_dacteBase && !_dacteMinuta) {
+                const st = document.getElementById('dacte-scan-status');
+                if (st) st.innerHTML = '⚠️ Código MD não detectado — feche e digite o número MD';
+                setTimeout(fecharDacteScanner, 2000);
+              }
+            }, 7000);
+          }
         }
         // 1D: tenta várias faixas de comprimento (minuta pode ter mais dígitos)
         if (fmt !== ZXing.BarcodeFormat.QR_CODE && !_dacteMinuta) {
@@ -898,6 +907,7 @@
   }
 
   function fecharDacteScanner() {
+    clearTimeout(window._dacteAutoClose); window._dacteAutoClose = null;
     clearInterval(window._dacteTimer);
     if (_dacteReader) { try { _dacteReader.reset(); } catch(_){} _dacteReader = null; }
     const video = document.getElementById('dacte-video');
