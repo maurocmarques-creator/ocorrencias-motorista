@@ -438,12 +438,20 @@
   <div id="step1" class="step active">
 
     <!-- ── Botão Escanear DACTE ── -->
-    <div class="dacte-btn" onclick="document.getElementById('dacte-foto-input').click()">
+    <div class="dacte-btn" onclick="abrirDacteScanner()">
       📷 Escanear DACTE
-      <div class="dacte-sub">Fotografe o documento · empresa e minuta preenchidos automaticamente</div>
+      <div class="dacte-sub">Aponte a câmera para o QR Code e para o código MD do documento</div>
     </div>
-    <input type="file" id="dacte-foto-input" accept="image/*" capture="environment" style="display:none" onchange="processarDacte(event)">
     <div id="dacte-box" class="card" style="display:none;padding:0;overflow:hidden"></div>
+    <!-- Modal câmera ao vivo -->
+    <div id="dacte-modal" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="position:relative;width:100%;max-width:480px;">
+        <video id="dacte-video" autoplay playsinline muted style="width:100%;display:block;"></video>
+        <div style="position:absolute;inset:0;pointer-events:none;border:3px solid rgba(255,255,255,0.25);"></div>
+        <div id="dacte-scan-status" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.78);color:#fff;font-size:13px;padding:12px 16px;text-align:center;line-height:1.5;"></div>
+      </div>
+      <button onclick="fecharDacteScanner()" style="margin-top:16px;background:rgba(255,255,255,0.15);color:#fff;border:2px solid rgba(255,255,255,0.4);border-radius:8px;padding:12px 32px;font-size:15px;cursor:pointer;">✕ Cancelar</button>
+    </div>
 
     <div class="card">
       <h2>1. Selecione a Empresa</h2>
@@ -791,35 +799,85 @@
   function _setDacteBox(html) {
     const b = document.getElementById('dacte-box'); b.style.display = 'block'; b.innerHTML = html;
   }
-  async function processarDacte(event) {
-    const file = event.target.files[0]; event.target.value = ''; if (!file) return;
-    _setDacteBox('<div class="dacte-progress"><div class="dp-spinner"></div><br>Lendo QR Code...</div>');
+  let _dacteBase = null, _dacteMinuta = null, _dacteReader = null;
+
+  async function abrirDacteScanner() {
+    _dacteBase = null; _dacteMinuta = null;
+    const modal = document.getElementById('dacte-modal');
+    modal.style.display = 'flex';
+    document.getElementById('dacte-scan-status').innerHTML = '⏳ Iniciando câmera...';
     try {
-      await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js');
-      const img = await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file);});
-      const cv=document.createElement('canvas');
-      const scale=Math.min(1,1400/Math.max(img.width,img.height));
-      cv.width=Math.floor(img.width*scale); cv.height=Math.floor(img.height*scale);
-      const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,cv.width,cv.height);
-      const qr=jsQR(ctx.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height);
-      if(!qr){_setDacteBox('<div style="padding:16px;color:#c00">❌ QR Code não encontrado.<br><small>Enquadre o documento inteiro e tente com melhor iluminação.</small></div>');return;}
-      const rawDigits=qr.data.replace(/\D/g,'');
-      const keyMatch=rawDigits.match(/(\d{44})/);
-      let base=keyMatch?(CNPJ_BASE_MAP[keyMatch[1].substring(6,14)]||null):null;
-      if(base){
-        document.querySelectorAll('#section-minuta .radio-option').forEach(opt=>{if(opt.querySelector('input[value="'+base+'"]')) selectBase(opt,base);});
-      }
-      const nomes={porto:'Az Portoex',ptx:'PTX Transporte',pex:'Pex Logística'};
-      const nomeBase=base?'✅ '+nomes[base]:'⚠️ Não identificada — selecione abaixo';
-      _setDacteBox('<div class="dacte-resultado" style="padding:14px">'+
-        '<div class="dr-row"><span class="dr-label">Empresa</span><span>'+nomeBase+'</span></div>'+
-        '<div class="dr-row" style="font-size:13px;color:#555">Digite o número <strong>MD</strong> do DACTE no campo abaixo e toque em Buscar Minuta.</div>'+
-        '</div>');
-      // Foca o campo minuta
-      setTimeout(()=>{ document.getElementById('minuta').focus(); document.getElementById('minuta').scrollIntoView({behavior:'smooth',block:'center'}); }, 300);
-    } catch(e){ _setDacteBox('<div style="padding:14px;color:#c00">❌ Erro: '+e.message+'</div>'); }
+      await _loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js');
+      _dacteReader = new ZXing.BrowserMultiFormatReader();
+      const video = document.getElementById('dacte-video');
+      document.getElementById('dacte-scan-status').innerHTML = '📷 Aponte para o <strong>QR Code</strong> do DACTE';
+      await _dacteReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (!result) return;
+        const raw = result.getText();
+        const fmt = result.getBarcodeFormat();
+        // QR Code → extrai base pelo CNPJ
+        if (fmt === ZXing.BarcodeFormat.QR_CODE && !_dacteBase) {
+          const digits = raw.replace(/\D/g,'');
+          const km = digits.match(/(\d{44})/);
+          if (km) _dacteBase = CNPJ_BASE_MAP[km[1].substring(6,14)] || null;
+        }
+        // Código de barras numérico (1D) com 5-7 dígitos → candidato a minuta
+        if (fmt !== ZXing.BarcodeFormat.QR_CODE && !_dacteMinuta) {
+          const nums = raw.replace(/\D/g,'');
+          if (nums.length >= 5 && nums.length <= 7) _dacteMinuta = nums;
+        }
+        _atualizarStatusScanner();
+        if (_dacteBase && _dacteMinuta) _confirmarDacte();
+      });
+    } catch(e) {
+      document.getElementById('dacte-scan-status').innerHTML = '❌ Erro: ' + e.message;
+    }
   }
-  function cancelarDacte(){clearInterval(window._dacteTimer);const cd=document.getElementById('dacte-countdown');if(cd){cd.onclick=null;cd.innerHTML='✔ Cancelado — ajuste se necessário e clique em Buscar Minuta.';cd.style.cursor='default';}}
+
+  function _atualizarStatusScanner() {
+    const nomes = {porto:'Az Portoex', ptx:'PTX Transporte', pex:'Pex Logística'};
+    let msg = '';
+    if (_dacteBase)   msg += '✅ Empresa: ' + nomes[_dacteBase] + '<br>';
+    else              msg += '📷 Aponte para o <strong>QR Code</strong><br>';
+    if (_dacteMinuta) msg += '✅ Minuta: ' + _dacteMinuta;
+    else              msg += '📷 Aponte para o código de barras do <strong>MD</strong>';
+    document.getElementById('dacte-scan-status').innerHTML = msg;
+  }
+
+  function _confirmarDacte() {
+    if (_dacteReader) { try { _dacteReader.reset(); } catch(_){} _dacteReader = null; }
+    const nomes = {porto:'Az Portoex', ptx:'PTX Transporte', pex:'Pex Logística'};
+    document.getElementById('dacte-scan-status').innerHTML =
+      '✅ ' + nomes[_dacteBase] + ' · Minuta ' + _dacteMinuta + '<br>Buscando em <strong><span id="dacte-cnt">3</span>s</strong>...';
+    // Aplica na tela
+    document.querySelectorAll('#section-minuta .radio-option').forEach(opt=>{
+      if(opt.querySelector('input[value="'+_dacteBase+'"]')) selectBase(opt,_dacteBase);
+    });
+    document.getElementById('minuta').value = _dacteMinuta;
+    let cnt = 3;
+    window._dacteTimer = setInterval(()=>{
+      cnt--;
+      const el = document.getElementById('dacte-cnt');
+      if(!el){clearInterval(window._dacteTimer);return;}
+      if(cnt<=0){ clearInterval(window._dacteTimer); fecharDacteScanner(); buscarMinuta(); }
+      else el.textContent = cnt;
+    }, 1000);
+  }
+
+  function fecharDacteScanner() {
+    clearInterval(window._dacteTimer);
+    if (_dacteReader) { try { _dacteReader.reset(); } catch(_){} _dacteReader = null; }
+    const video = document.getElementById('dacte-video');
+    if (video && video.srcObject) { video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; }
+    document.getElementById('dacte-modal').style.display = 'none';
+    // Se tem base mas não tem minuta, aplica o que tem e foca campo
+    if (_dacteBase && !_dacteMinuta) {
+      document.querySelectorAll('#section-minuta .radio-option').forEach(opt=>{
+        if(opt.querySelector('input[value="'+_dacteBase+'"]')) selectBase(opt,_dacteBase);
+      });
+      setTimeout(()=>{ document.getElementById('minuta').focus(); document.getElementById('minuta').scrollIntoView({behavior:'smooth',block:'center'}); },200);
+    }
+  }
   // ── fim DACTE Scanner ──────────────────────────────────
 
   function reiniciar() {
