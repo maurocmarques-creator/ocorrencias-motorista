@@ -255,6 +255,30 @@
     }
     .tag-ok   { background: #d1fae5; color: #065f46; }
     .tag-warn { background: #fef9c3; color: #713f12; }
+
+    /* ── DACTE Scanner ──────────────────────────────── */
+    .dacte-btn {
+      background: linear-gradient(135deg, #1a5276, #2471a3);
+      color: white;
+      padding: 18px 16px;
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 14px;
+      font-weight: bold;
+      font-size: 15px;
+      box-shadow: 0 4px 14px rgba(26,82,118,0.4);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dacte-btn:active { opacity: 0.85; transform: scale(0.98); }
+    .dacte-sub { font-size: 12px; opacity: 0.85; font-weight: normal; margin-top: 4px; }
+    .dacte-resultado .dr-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+    .dacte-resultado .dr-row:last-child { border-bottom: none; }
+    .dacte-resultado .dr-label { font-weight: bold; min-width: 72px; color: #555; }
+    .dacte-countdown { text-align: center; margin-top: 12px; padding: 10px; background: #eaf3fb; border-radius: 8px; color: #1a5276; font-size: 13px; cursor: pointer; }
+    .dacte-progress { text-align: center; padding: 20px 16px; color: #555; }
+    .dp-spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #ccc; border-top-color: #2471a3; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -412,6 +436,15 @@
 
   <!-- ── STEP 1: Empresa + Minuta ─────────────────────── -->
   <div id="step1" class="step active">
+
+    <!-- ── Botão Escanear DACTE ── -->
+    <div class="dacte-btn" onclick="document.getElementById('dacte-foto-input').click()">
+      📷 Escanear DACTE
+      <div class="dacte-sub">Fotografe o documento · empresa e minuta preenchidos automaticamente</div>
+    </div>
+    <input type="file" id="dacte-foto-input" accept="image/*" capture="environment" style="display:none" onchange="processarDacte(event)">
+    <div id="dacte-box" class="card" style="display:none;padding:0;overflow:hidden"></div>
+
     <div class="card">
       <h2>1. Selecione a Empresa</h2>
       <div class="radio-group">
@@ -742,6 +775,85 @@
   }
 
   // ── Reiniciar ──────────────────────────────────────────
+  // ── DACTE Scanner ──────────────────────────────────────
+  const CNPJ_BASE_MAP = { '22725000': 'porto' };
+  function _loadScript(src) {
+    return new Promise((res, rej) => {
+      window._scriptsCarregados = window._scriptsCarregados || {};
+      if (window._scriptsCarregados[src]) return res();
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => { window._scriptsCarregados[src] = true; res(); };
+      s.onerror = () => rej(new Error('Falha: ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function _setDacteBox(html) {
+    const b = document.getElementById('dacte-box'); b.style.display = 'block'; b.innerHTML = html;
+  }
+  async function processarDacte(event) {
+    const file = event.target.files[0]; event.target.value = ''; if (!file) return;
+    _setDacteBox('<div class="dacte-progress"><div class="dp-spinner"></div><br>Lendo QR Code...</div>');
+    try {
+      await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js');
+      const img = await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file);});
+      const cv = document.createElement('canvas');
+      const scale = Math.min(1, 1400/Math.max(img.width,img.height));
+      cv.width=Math.floor(img.width*scale); cv.height=Math.floor(img.height*scale);
+      const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,cv.width,cv.height);
+      const qr = jsQR(ctx.getImageData(0,0,cv.width,cv.height).data, cv.width, cv.height);
+      if (!qr) { _setDacteBox('<div style="padding:16px;color:#c00">❌ QR Code não encontrado.<br><small>Enquadre o documento inteiro e tente com melhor iluminação.</small></div>'); return; }
+      const rawDigits = qr.data.replace(/\D/g,'');
+      const keyMatch = rawDigits.match(/(\d{44})/);
+      let base = keyMatch ? (CNPJ_BASE_MAP[keyMatch[1].substring(6,14)]||null) : null;
+      _setDacteBox('<div class="dacte-progress"><div class="dp-spinner"></div><br>Lendo número da minuta...<br><small style="opacity:.65">Primeira vez: ~15s de download (único)</small></div>');
+      let minuta = '';
+      try {
+        await _loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+        const qrMinY=Math.min(qr.location.topLeftCorner.y,qr.location.topRightCorner.y);
+        const qrMaxY=Math.max(qr.location.bottomLeftCorner.y,qr.location.bottomRightCorner.y);
+        const cropX=Math.floor(cv.width*0.42);
+        const cropH=Math.min(cv.height,Math.floor(qrMaxY+(qrMaxY-qrMinY)*0.4));
+        const cropCv=document.createElement('canvas');
+        cropCv.width=cv.width-cropX; cropCv.height=cropH;
+        const cCtx=cropCv.getContext('2d');
+        cCtx.drawImage(cv,cropX,0,cropCv.width,cropH,0,0,cropCv.width,cropH);
+        const pxData=cCtx.getImageData(0,0,cropCv.width,cropCv.height);
+        for(let i=0;i<pxData.data.length;i+=4){const g=0.299*pxData.data[i]+0.587*pxData.data[i+1]+0.114*pxData.data[i+2];const e=g<100?0:g>180?255:g;pxData.data[i]=pxData.data[i+1]=pxData.data[i+2]=e;pxData.data[i+3]=255;}
+        cCtx.putImageData(pxData,0,0);
+        const {data:{text:ocrText}}=await Tesseract.recognize(cropCv,'eng',{tessedit_char_whitelist:'0123456789MD '});
+        const m=ocrText.match(/(?:MD|M[D0O])\s*(\d{5,7})/i)||ocrText.match(/\b(\d{5,7})\b/);
+        if(m) minuta=m[1];
+      } catch(e){ console.warn('OCR:',e.message); }
+      if(!base&&minuta){
+        _setDacteBox('<div class="dacte-progress"><div class="dp-spinner"></div><br>Identificando empresa...</div>');
+        try{
+          base=await Promise.any(['porto','ptx','pex'].map(async b=>{
+            const r=await fetch('/api/minuta?base='+b+'&codigo='+minuta);
+            const j=await r.json();
+            if(j.data?.[0]) return b; throw new Error('nao');
+          }));
+        }catch(_){}
+      }
+      if(base) document.querySelectorAll('#section-minuta .radio-option').forEach(opt=>{if(opt.querySelector('input[value="'+base+'"]')) selectBase(opt,base);});
+      if(minuta) document.getElementById('minuta').value=minuta;
+      const nomes={porto:'Az Portoex',ptx:'PTX Transporte',pex:'Pex Logística'};
+      const nomeBase=base?'✅ '+nomes[base]:'⚠️ Não identificada — selecione abaixo';
+      const nomeMn=minuta?'✅ '+minuta:'⚠️ Não lida — digite abaixo';
+      let html='<div class="dacte-resultado" style="padding:14px"><div class="dr-row"><span class="dr-label">Empresa</span><span>'+nomeBase+'</span></div><div class="dr-row"><span class="dr-label">Minuta</span><span>'+nomeMn+'</span></div>';
+      if(base&&minuta) html+='<div class="dacte-countdown" id="dacte-countdown" onclick="cancelarDacte()">Buscando em <strong><span id="dacte-cnt">3</span>s</strong> — toque para cancelar</div>';
+      else html+='<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="document.getElementById('dacte-box').style.display='none';buscarMinuta()">Buscar Minuta →</button>';
+      html+='</div>';
+      _setDacteBox(html);
+      if(base&&minuta){
+        let cnt=3;
+        window._dacteTimer=setInterval(()=>{cnt--;const el=document.getElementById('dacte-cnt');if(!el){clearInterval(window._dacteTimer);return;}if(cnt<=0){clearInterval(window._dacteTimer);document.getElementById('dacte-box').style.display='none';buscarMinuta();}else el.textContent=cnt;},1000);
+      }
+    } catch(e){ _setDacteBox('<div style="padding:14px;color:#c00">❌ Erro: '+e.message+'</div>'); }
+  }
+  function cancelarDacte(){clearInterval(window._dacteTimer);const cd=document.getElementById('dacte-countdown');if(cd){cd.onclick=null;cd.innerHTML='✔ Cancelado — ajuste se necessário e clique em Buscar Minuta.';cd.style.cursor='default';}}
+  // ── fim DACTE Scanner ──────────────────────────────────
+
   function reiniciar() {
     baseSel = null; cnpjDest = null; fotoB64 = null; fotoNome = null;
     document.getElementById('minuta').value        = '';
