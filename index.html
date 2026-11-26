@@ -823,7 +823,14 @@
     document.getElementById('dacte-scan-status').innerHTML = '⏳ Iniciando câmera...';
     try {
       await _loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js');
-      _dacteReader = new ZXing.BrowserMultiFormatReader();
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.CODE_93,
+        ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+      ]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      _dacteReader = new ZXing.BrowserMultiFormatReader(hints);
       const video = document.getElementById('dacte-video');
       document.getElementById('dacte-scan-status').innerHTML = '⏳ Câmera iniciando...';
       window._dacteLogs = [];
@@ -847,7 +854,11 @@
         // 1D: tenta várias faixas de comprimento (minuta pode ter mais dígitos)
         if (fmt !== ZXing.BarcodeFormat.QR_CODE && !_dacteMinuta) {
           const nums = raw.replace(/\D/g,'');
-          if (nums.length >= 5 && nums.length <= 10) _dacteMinuta = nums;
+          const fmtName = Object.keys(ZXing.BarcodeFormat).find(k=>ZXing.BarcodeFormat[k]===fmt)||String(fmt);
+          document.getElementById('dacte-scan-status').innerHTML='🔍 '+fmtName+': '+raw.substring(0,30);
+          if (!_dacteMinuta && nums.length >= 5 && nums.length <= 20 && nums.length !== 44) {
+            _dacteMinuta = nums.length <= 7 ? nums : nums.slice(-7);
+          }
         }
         _atualizarStatusScanner();
         if (_dacteBase && _dacteMinuta) _confirmarDacte();
