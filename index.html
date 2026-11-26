@@ -570,20 +570,20 @@
       const j = await r.json();
 
       // Valida se a minuta realmente pertence a esta base
-      if (!r.ok || !j.data || !j.data[0] || !j.data[0].dados) {
+      // Aceita minuta com ou sem histórico de rastreamento (dados pode ser null/vazio)
+      if (!r.ok || !j.data || !j.data[0]) {
         throw new Error('Minuta não pertence a esta base.');
       }
 
       const doc  = j.data[0];
-      const semRastreio = (doc.status === 0);
-      const dadosArr = doc.dados || [];
+      const dadosArr = Array.isArray(doc.dados) ? doc.dados : [];
+      const semRastreio = dadosArr.length === 0;
 
-      // Verifica se já há Entrega Realizada (código 1) registrada
-      const jaEntregue = dadosArr.some(d =>
-        d.codigo === 1 || d.codigo === '1' ||
-        d.codigo_ocorrencia === 1 || d.codigo_ocorrencia === '1' ||
-        d.codigo_evento === 1 || d.codigo_evento === '1'
-      );
+      // Verifica se já há Entrega Realizada registrada (Brudam retorna via campo "descricao")
+      const jaEntregue = dadosArr.some(d => {
+        const desc = (d.descricao || '').toUpperCase();
+        return desc.includes('ENTREGA REALIZADA');
+      });
       if (jaEntregue) {
         throw new Error('Minuta já finalizada — Entrega Realizada já registrada. Não é possível registrar novamente.');
       }
