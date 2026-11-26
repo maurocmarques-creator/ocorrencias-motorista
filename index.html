@@ -695,21 +695,33 @@
     const reader = new FileReader();
     reader.onload = e => {
       const dataUrl = e.target.result;
-      fotoB64 = dataUrl.split(',')[1];
-      // Detecta o tipo real do arquivo (iOS converte HEIC → JPEG mas o file.name pode continuar .heic)
-      const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-      const ext = mimeType === 'image/png' ? 'png' : 'jpg';
-      fotoNome = `foto_comprovante_${Date.now()}.${ext}`;
-      const prev = document.getElementById('foto-preview');
-      prev.src = e.target.result;
-      prev.style.display = 'block';
-      document.getElementById('foto-icon').style.display = 'none';
-      document.getElementById('foto-txt').style.display = 'none';
-      document.getElementById('foto-badge').style.display = 'inline-block';
+      // Comprimir imagem via canvas (máx 1200px, JPEG 80%)
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else       { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        const compressed = cv.toDataURL('image/jpeg', 0.80);
+        fotoB64 = compressed.split(',')[1];
+        fotoNome = `foto_comprovante_${Date.now()}.jpg`;
+        // Preview
+        const prev = document.getElementById('foto-preview');
+        prev.src = compressed;
+        prev.style.display = 'block';
+        document.getElementById('foto-icon').style.display = 'none';
+        document.getElementById('foto-txt').style.display = 'none';
+        document.getElementById('foto-badge').style.display = 'inline-block';
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   }
-
   function resetFoto() {
     document.getElementById('foto-input').value = '';
     document.getElementById('foto-preview').style.display = 'none';
