@@ -115,6 +115,12 @@ export default async function handler(req, res) {
     });
 
     const j = await r.json();
+    if (!r.ok) {
+      // Return both Brudam's error AND what we sent (for debugging)
+      const sentBody = JSON.stringify(body)
+        .replace(/"dados":"[^"]{0,30}[^"]*"/g, '"dados":"[BASE64...]"'); // truncate base64
+      return res.status(r.status).json({ ...j, _debug_sent: sentBody.substring(0, 400) });
+    }
     return res.status(r.status).json(j);
   } catch (e) {
     return res.status(500).json({ error: e.message });
