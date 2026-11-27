@@ -785,7 +785,12 @@
       });
 
       const j = await r.json();
-      if (!r.ok) throw new Error(j.error || j.message || 'Erro ao registrar.');
+      console.log('[OCO API]', r.status, JSON.stringify(j));
+      if (!r.ok) {
+        const det = j.errors ? JSON.stringify(j.errors) : (j.detail || j.error || j.message || '');
+        const full = det || JSON.stringify(j).substring(0, 200);
+        throw new Error(full || 'Erro ao registrar.');
+      }
 
       const ocNome   = document.getElementById('ocorrencia').selectedOptions[0].text;
       const nomeBase = { porto: 'Az Portoex', ptx: 'PTX Transporte', pex: 'Pex Logística' }[baseSel];
