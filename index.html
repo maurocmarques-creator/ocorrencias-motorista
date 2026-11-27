@@ -787,8 +787,9 @@
       const j = await r.json();
       console.log('[OCO API]', r.status, JSON.stringify(j));
       if (!r.ok) {
-        const det = j.errors ? JSON.stringify(j.errors) : (j.detail || j.error || j.message || '');
-        const full = det || JSON.stringify(j).substring(0, 200);
+        const det = j.errors ? JSON.stringify(j.errors) : (j.detail || j.error || j.message || JSON.stringify(j).substring(0,150));
+        const dbg = j._debug_sent ? ' | ENVIADO: ' + j._debug_sent.substring(0,150) : '';
+        const full = det + dbg;
         throw new Error(full || 'Erro ao registrar.');
       }
 
