@@ -66,6 +66,11 @@ export default async function handler(req, res) {
     if (!exists || chk.status === 404) {
       return res.status(404).json({ error: 'Minuta não pertence a esta base.' });
     }
+    // Extrai cnpj_destinatario do documento principal da minuta (fallback para minutas sem histórico)
+    const minutaDoc = Array.isArray(minutaData) ? minutaData[0] : minutaData;
+    const cnpjMinuta = minutaDoc?.cnpj_destinatario
+      || (Array.isArray(minutaDoc?.dados) && minutaDoc.dados.find(d => d.cnpj_destinatario)?.cnpj_destinatario)
+      || null;
 
     // Monta o evento
     const evento = {
@@ -90,8 +95,9 @@ export default async function handler(req, res) {
       eventos: [evento]
     };
 
-    // CNPJ do destinatário (obrigatório pela API quando tipo != MANIFESTO/DESPACHO)
-    if (cnpj) documento.cliente = cnpj;
+    // CNPJ do destinatário — usa o do frontend ou extrai direto da minuta
+    const cnpjFinal = cnpj || cnpjMinuta || null;
+    if (cnpjFinal) documento.cliente = cnpjFinal;
 
     // Anexa foto se for ocorrência 1 (entrega realizada)
     if (foto_base64 && foto_nome) {
@@ -105,20 +111,31 @@ export default async function handler(req, res) {
 
     const body = { documentos: [documento] };
 
-    const r = await fetch(`${b.url}/tracking/ocorrencias`, {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization:  `Bearer ${token}`
-      },
-      body: JSON.stringify(body)
-    });
+    const postOcorrencia = async (bodyToSend) => {
+      const resp = await fetch(`${b.url}/tracking/ocorrencias`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(bodyToSend)
+      });
+      return { resp, json: await resp.json() };
+    };
 
-    const j = await r.json();
+    let { resp: r, json: j } = await postOcorrencia(body);
+
+    // Se falhar com "Erro nos dados enviados", tenta sem foto (diagnóstico)
+    if (!r.ok && (j.error || j.message || '').includes('dados')) {
+      const bodySemFoto = JSON.parse(JSON.stringify(body));
+      delete bodySemFoto.documentos[0].anexos;
+      const { resp: r2, json: j2 } = await postOcorrencia(bodySemFoto);
+      if (r2.ok) {
+        return res.status(r2.status).json({ ...j2, _aviso: 'Registrado sem foto (formato não suportado nesta base).' });
+      }
+      j = { ...j2, _tentativa_sem_foto: j2.error || j2.message };
+      r = r2;
+    }
+
     if (!r.ok) {
-      // Return both Brudam's error AND what we sent (for debugging)
-      const sentBody = JSON.stringify(body)
-        .replace(/"dados":"[^"]{0,30}[^"]*"/g, '"dados":"[BASE64...]"'); // truncate base64
+      const sentBody = JSON.stringify(body).replace(/"dados":"[^"]{20}[^"]*"/g, '"dados":"[BASE64...]"');
       return res.status(r.status).json({ ...j, _debug_sent: sentBody.substring(0, 400) });
     }
     return res.status(r.status).json(j);
